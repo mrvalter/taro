@@ -1,0 +1,16 @@
+AddDefaultCharset UTF-8
+
+setEnv APP_ENV dev
+Options -Indexes
+
+php_flag session.use_only_cookies on
+
+#IndexIgnore */*
+
+RewriteEngine on
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !.*\.(ico|gif|jpg|jpeg|png|js|css)
+
+RewriteRule . index.php [PT]

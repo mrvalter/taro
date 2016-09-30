@@ -30,18 +30,7 @@ return array(
         
         '_config' => 'RESERVED',				
 		'menu'    => 'RESERVED',
-		'router'  => 'RESERVED',		       
-        
-		'geo'=>[
-			'class'=> 'Services\Geo\Nominatim',
-			'params' => [
-				'template_url'       => 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-				'search_url'         => 'https://streetmaps.materiamedica.ru/nominatim/crm/search.php',				
-                'reverse_search_url' => 'https://streetmaps.materiamedica.ru/nominatim/crm/reverse.php',				
-				'user'=> '',
-				'password'=>'',				
-			],
-		],
+		'router'  => 'RESERVED',		               		
 		
 		'db'=>[
 			'class'=> 'Services\DB',

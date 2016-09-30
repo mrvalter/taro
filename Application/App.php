@@ -29,7 +29,7 @@ class App {
     const ENV_PRODACTION = "prod";
     const ENV_DEVELOPMENT = "dev";    	
     
-	private static $_instance = null;        
+    private static $_instance = null;        
     private static $startTime=0;
 	private static $widgets=array();
    
@@ -40,10 +40,7 @@ class App {
      */
     private $env;
     
-    /**
-     *
-     * @var string путь к публичной папке приложения
-     */
+    /** @var string путь к публичной папке приложения */
     private $httpPath;
 	
 	/** @var string */
@@ -53,18 +50,14 @@ class App {
     private $bundlesPath;
 	
 	/** @var string */
-	private $configPath;
+    private $configPath;
 	
 	/** @var ClassLoader */
     private $classLoader;
-	
-    
-    
-    /**
-     *
-     * @var \ServiceContainer Объект контейнера сервисов
-     */
+	        
+    /** @var \ServiceContainer Объект контейнера сервисов */
     public $ServiceContainer = null;
+    
     
     private function __contruct(){}
     
@@ -109,15 +102,15 @@ class App {
         return $this->bundlesPath;
     }
     
-	public function getPathToSelfBundle()
-	{
-		return $this->bundlesPath.'/'.$this->getService('router')->getBundle();
-	}
+    public function getPathToSelfBundle()
+    {
+            return $this->bundlesPath.'/'.$this->getService('router')->getBundle();
+    }
 	
-	public function getPublicBundlePath()
-	{				
-		return $this->bundlesPath.'/'.self::PUBLIC_BUNDLE;
-	}
+    public function getPublicBundlePath()
+    {				
+            return $this->bundlesPath.'/'.self::PUBLIC_BUNDLE;
+    }
 	
     public function getAppPath()
     {
@@ -141,22 +134,23 @@ class App {
         return $this->httpPath;
     }
     
-	public function getConfigPath()
-	{
-		return $this->configPath;
-	}
+    public function getConfigPath()
+    {
+            return $this->configPath;
+    }
 	
-	public function setConfigPath($path)
-	{
-		$this->configPath = $path;
-		return $this;
-	}
+    public function setConfigPath($path)
+    {
+            $this->configPath = $path;
+            return $this;
+    }
 	
     public function setClassLoader(ClassLoader $loader)
     {
         $this->classLoader = $loader;     
         return $this;
     }
+    
     /**
      * Устанавливает способ отображения ошибок
      * @param int $errorH (E_ALL, E_ERROR)
@@ -164,7 +158,7 @@ class App {
      */            
     public function setErrorHandler($errorH = null)
     {
-		$this->env = 'prod';
+        $this->env = 'prod';
 		
         if($errorH !== null){
             error_reporting($errorH);
@@ -194,11 +188,11 @@ class App {
      */
     public function getService($name)
     {
-		if(null !== $this->ServiceContainer){
-			return $this->ServiceContainer->get($name);
-		}
-		
-		return null;
+        if(null !== $this->ServiceContainer){
+                return $this->ServiceContainer->get($name);
+        }
+
+        return null;
     }  	        
     
     /**
@@ -255,115 +249,117 @@ class App {
         
         try {
             $config = new Config($this->getConfigPath(), $this->getEnv());
-			$firewall = new Firewall();
+            $firewall = new Firewall();
 
-			$router = Router::createFromGlobals()	
-				->withBundlesPath($this->getBundlesPath())
-				->withConfig($config)
-				->withFirewall();
-			
-			die();
-			$this->ServiceContainer = new ServiceContainer($config->get('services'));
-			$this->ServiceContainer->addService('_config', $config);
-			$this->ServiceContainer->addService('router', $router);
-			$this->ServiceContainer->addService('classloader', $this->classLoader);
-			$this->ServiceContainer->addService('firewall', $firewall);
-						
-			//$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Classes");
-			//$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Controllers");
-			
-			//$this->classLoader->addNamespace('Events', $bundlePath."/Events");
-            //$this->ServiceContainer->addService('classLoader', $this->classLoader);
-			
-			$logger = $this->getService('logger');												
-			$security = $this->getService('security'); 
-			
-		}catch(AppException $e){
-			echo 'Системная ошибка !<br />';			
-			$e->showTable();
-			die();
-		}		
+            $router = Router::createFromGlobals()	
+                    ->withBundlesPath($this->getBundlesPath())
+                    ->withConfig($config)
+                    ->withFirewall();
+
+            die();
+            $this->ServiceContainer = new ServiceContainer($config->get('services'));
+            $this->ServiceContainer->addService('_config', $config);
+            $this->ServiceContainer->addService('router', $router);
+            $this->ServiceContainer->addService('classloader', $this->classLoader);
+            $this->ServiceContainer->addService('firewall', $firewall);
+
+            //$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Classes");
+            //$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Controllers");
+
+            //$this->classLoader->addNamespace('Events', $bundlePath."/Events");
+//$this->ServiceContainer->addService('classLoader', $this->classLoader);
+
+            $logger = $this->getService('logger');												
+            $security = $this->getService('security'); 
+
+        }catch(AppException $e){
+                echo 'Системная ошибка !<br />';			
+                $e->showTable();
+                die();
+        }		
 		
 		
-		try{                        
+        try{                        
 			
             if(!$security->authorise() && !(strtolower($router->getController()) == 'index' && strtolower($router->getAction()) == 'login')){
                 $router->redirect('index', 'login');
 				die();
             }													
 			
-			$menu = new Menu($this->getService('db'), $security->getUser(), $router->getPathWithoutBundleFromUrl());
-			$menu->setBundle($router->getBundleFromUrl());
+            $menu = new Menu($this->getService('db'), $security->getUser(), $router->getPathWithoutBundleFromUrl());
+            $menu->setBundle($router->getBundleFromUrl());
             
-			if(!$router->getRequest()->isAjax() && $security->getUser()->isExists()){
+            if(!$router->getRequest()->isAjax() && $security->getUser()->isExists()){
                 $security->buildAllMenuRights($menu);
             }
-			$this->ServiceContainer->addService('menu', $menu);
+            
+            $this->ServiceContainer->addService('menu', $menu);
 			
-			$security->setMenuService($menu);
+            $security->setMenuService($menu);
 			
 			
-			/* Строим параметры переданные в temp хранилище сессиии */
-			$this->mooveSessionUnreadToTmp();
+            /* Строим параметры переданные в temp хранилище сессиии */
+            $this->mooveSessionUnreadToTmp();
             $this->buildTmpRequestVars(); 
             $view = $this->runController($router);			
             //$params['menu'] = $this->getService('menu');
             //$View->setParams($params);
-			$garbage = ob_get_clean();
+            $garbage = ob_get_clean();
 			
-			$router->getRequest()->isAjax() ? $view->showContentHTML() : $view->renderPage()->showPage();
+            $router->getRequest()->isAjax() ? $view->showContentHTML() : $view->renderPage()->showPage();
 			$this->unsetSessionTmp();
 
 			
-			Logger::pushSystem($router->getBundle()." : ".$router->getController()." : ".$router->getAction());
-			Logger::pushSystem(sprintf('Скрипт выполнялся %.4F сек.', microtime(true) - self::$startTime));
-			Logger::pushSystem("Время работы с ДБ: ".Logger::getDbTime());
-			Logger::pushSystem("Память: ".((int)(memory_get_usage(false)/1024)).' KB');
-			Logger::pushSystem("Пиковая память: ".((int)(memory_get_peak_usage(false)/1024)).' KB');
+            Logger::pushSystem($router->getBundle()." : ".$router->getController()." : ".$router->getAction());
+            Logger::pushSystem(sprintf('Скрипт выполнялся %.4F сек.', microtime(true) - self::$startTime));
+            Logger::pushSystem("Время работы с ДБ: ".Logger::getDbTime());
+            Logger::pushSystem("Память: ".((int)(memory_get_usage(false)/1024)).' KB');
+            Logger::pushSystem("Пиковая память: ".((int)(memory_get_peak_usage(false)/1024)).' KB');
 			
 			
-			if(!$router->getRequest()->isAjax() && $this->env == self::ENV_DEVELOPMENT){
-				if($garbage){
-					echo '<div style="clear:both">'.$garbage.'</div>';
-				}				
-				$log = Logger::getLog();
-				if(!empty($log)){
-					$this->printConsole($log);
-				}
-			}						
+            if(!$router->getRequest()->isAjax() && $this->env == self::ENV_DEVELOPMENT){
+                    if($garbage){
+                            echo '<div style="clear:both">'.$garbage.'</div>';
+                    }				
+                    $log = Logger::getLog();
+                    if(!empty($log)){
+                            $this->printConsole($log);
+                    }
+            }						
             
         }catch (EccessDeniedException $e){			            
-			$security->accessDeniedGenerate();
+            $security->accessDeniedGenerate();
 			
         }catch (AppException $e){		
-			header('Content-Type: text/html; charset=utf-8');
-			//$router = $this->getService('router');
-			
-			if(!is_object($router)){
-				echo $e->getMessage().$e->getTraceAsString();
-				die();
-			}						
-            
-			if($router->getRequest()->isAjax()){
-				$aResponce = new AjaxResponce();
-				$aResponce->addErrors($e->getMessage().$e->getTraceAsString());
-				echo $aResponce->getResponce();
-				die();
-			}				
-				
-			$router->setNotFound();
+            header('Content-Type: text/html; charset=utf-8');
+            //$router = $this->getService('router');
+
+            if(!is_object($router)){
+                    echo $e->getMessage().$e->getTraceAsString();
+                    die();
+            }						
+
+            if($router->getRequest()->isAjax()){
+                    $aResponce = new AjaxResponce();
+                    $aResponce->addErrors($e->getMessage().$e->getTraceAsString());
+                    echo $aResponce->getResponce();
+                    die();
+            }				
+
+            $router->setNotFound();
             $this->runController($router)->renderPage()->showPage();
 			
             if($this->env == self::ENV_DEVELOPMENT){                				
 				$e->getMessage().' '.$e->showTable();				
             }
         }catch(PDOException $e){
-			if($router->getRequest()->isAjax()){
-				$aResponce = new AjaxResponce();
-				$aResponce->addErrors($e->getMessage().$e->getTraceAsString());
-				echo $aResponce->getResponce();
-				die();
-			}
+            if($router->getRequest()->isAjax()){
+                    $aResponce = new AjaxResponce();
+                    $aResponce->addErrors($e->getMessage().$e->getTraceAsString());
+                    echo $aResponce->getResponce();
+                    die();
+            }
+            
             if(property_exists($e, 'xdebug_message')){
                 echo '<table>';
                 echo $e->xdebug_message;
@@ -372,16 +368,16 @@ class App {
                 echo $e->getMessage();
             }
 			
-		}catch(Exception $e){				
-			$router->setNotFound();
-			$this->runController($router)->renderPage()->showPage();
-			if($this->env == self::ENV_DEVELOPMENT){
-				echo '<table>';
-				echo $e->xdebug_message;
-				echo '</table>';
-            }			
+        }catch(Exception $e){
+                $router->setNotFound();
+                $this->runController($router)->renderPage()->showPage();
+                if($this->env == self::ENV_DEVELOPMENT){
+                    echo '<table>';
+                    echo $e->xdebug_message;
+                    echo '</table>';
+                }			
 			
-		}
+        }
     }
     
     private function buildTmpRequestVars()
@@ -415,32 +411,32 @@ class App {
      */
     private function runController(Router $Router, $params=[], MenuItem $rights=null)
     {	
-		if($Router->isEmpty()){
-			return new View();
-		}
+        if($Router->isEmpty()){
+                return new View();
+        }
+
+        $security = $this->getService('security');
+
+        /* строим меню */									
+        $bundle          = $Router->getBundle();
+        $controller      = $Router->getController();
+        $controllerClass = $bundle==self::PUBLIC_BUNDLE ? 'MatMedV2_Public\\Controllers\\'.$controller.'Controller' : $controller.'Controller';
+        $actionName      = $Router->getAction();	
+
+
+
+        $View = $this->getDefaultView();
+
+        $View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));	
+
+        if(!class_exists($controllerClass) || (!method_exists($controllerClass, $actionName.'Widget') &&  !method_exists($controllerClass, $actionName.'Action'))){
+                $controllerClass = 'MatMedV2_Public\\Controllers\\'.$controllerClass;
+                $View->addTemplatePath($this->bundlesPath."/".self::PUBLIC_BUNDLE."/views/".$Router->getController(false));	
+        }else{
+                $View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));
+        }
 		
-		$security = $this->getService('security');
-		
-		/* строим меню */									
-		$bundle          = $Router->getBundle();
-		$controller      = $Router->getController();
-		$controllerClass = $bundle==self::PUBLIC_BUNDLE ? 'MatMedV2_Public\\Controllers\\'.$controller.'Controller' : $controller.'Controller';
-		$actionName      = $Router->getAction();	
-		
-				
-		
-		$View = $this->getDefaultView();
-		
-		$View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));	
-			        
-		if(!class_exists($controllerClass) || (!method_exists($controllerClass, $actionName.'Widget') &&  !method_exists($controllerClass, $actionName.'Action'))){
-			$controllerClass = 'MatMedV2_Public\\Controllers\\'.$controllerClass;
-			$View->addTemplatePath($this->bundlesPath."/".self::PUBLIC_BUNDLE."/views/".$Router->getController(false));	
-		}else{
-			$View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));
-		}
-		
-		//var_dump($controllerClass);
+        //var_dump($controllerClass);
         			
         $refController = new ReflectionClass( $controllerClass );
 		

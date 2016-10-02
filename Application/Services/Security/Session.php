@@ -10,37 +10,43 @@ namespace Services\Security;
  */
 class Session {
 	
-	protected $login;
+    protected $login;
     protected $domen;
 	
-	public function __construct($login, $domen)
+    public function __construct($login, $domen)
     {
-		$this->login = $login;
+        
+        $this->login = $login;
         $this->domen = $domen;
-	}
+    }
 	
-	public function getLogin()
-	{
-		return $this->login;
-	}
+    public function getLogin()
+    {
+        
+        return $this->login;
+    }
    
    public function getDomen()
-	{
-		return $this->domen;
-	}
-   
-	public function start()
     {
+       
+        return $this->domen;
+    }
+   
+    public function start()
+    {
+        
         session_start();		
     }   
 	
-	public function setNotWrite()
-	{
-		return $this;
-	}
+    public function setNotWrite()
+    {
+        
+        return $this;
+    }
 	
-	public function isDestroy()
-   {
+    public function isDestroy()
+    {
+        
        return false;
-   }
+    }
 }

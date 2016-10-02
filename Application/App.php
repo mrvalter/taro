@@ -76,7 +76,8 @@ class App {
      * 
      * @param string $httpPath Путь к директории публичной папке Приложения
      */
-    public static function run($httpPath, ClassLoader $loader){
+    public static function run($httpPath, ClassLoader $loader)
+    {
 		
         self::$startTime = microtime(true);
         
@@ -99,29 +100,35 @@ class App {
     
     public function getBundlesPath()
     {
-        return $this->bundlesPath;
+        
+        return $this->bundlesPath;        
     }
     
     public function getPathToSelfBundle()
     {
-            return $this->bundlesPath.'/'.$this->getService('router')->getBundle();
+        
+        return $this->bundlesPath.'/'.$this->getService('router')->getBundle();        
     }
 	
     public function getPublicBundlePath()
-    {				
-            return $this->bundlesPath.'/'.self::PUBLIC_BUNDLE;
+    {	
+        
+        return $this->bundlesPath.'/'.self::PUBLIC_BUNDLE;        
     }
 	
     public function getAppPath()
     {
-        return $this->appPath;
+        
+        return $this->appPath;        
     }
 	
     /**
      * Возвращает значение переменной окружения
      * @return string
      */
-    public function getEnv(){
+    public function getEnv()
+    {
+        
         return $this->env;
     }
     
@@ -131,22 +138,26 @@ class App {
      */
     public function getHttpPath()
     {
+        
         return $this->httpPath;
     }
     
     public function getConfigPath()
     {
-            return $this->configPath;
+        
+        return $this->configPath;
     }
 	
     public function setConfigPath($path)
     {
-            $this->configPath = $path;
-            return $this;
+        
+        $this->configPath = $path;
+        return $this;
     }
 	
     public function setClassLoader(ClassLoader $loader)
     {
+        
         $this->classLoader = $loader;     
         return $this;
     }
@@ -158,6 +169,7 @@ class App {
      */            
     public function setErrorHandler($errorH = null)
     {
+        
         $this->env = 'prod';
 		
         if($errorH !== null){
@@ -188,8 +200,9 @@ class App {
      */
     public function getService($name)
     {
+        
         if(null !== $this->ServiceContainer){
-                return $this->ServiceContainer->get($name);
+            return $this->ServiceContainer->get($name);
         }
 
         return null;
@@ -202,6 +215,7 @@ class App {
      */
     private function setBundlesPath($path)
     {
+        
         $this->bundlesPath = $path;
         return $this;
     }
@@ -211,7 +225,9 @@ class App {
      * @param string $env
      * @return \App
      */    
-    private function setEnv($env){
+    private function setEnv($env)
+    {
+        
         $this->env = self::ENV_DEVELOPMENT==$env ? self::ENV_DEVELOPMENT : self::ENV_PRODACTION;  
         return $this;
     }
@@ -222,6 +238,7 @@ class App {
      */
     private function setHttpPath($httpPath)
     {
+        
         $this->httpPath = $httpPath;
         return $this;
     }
@@ -234,6 +251,7 @@ class App {
      */
     private function setAppPath($appPath)
     {
+        
         $this->appPath = $appPath;
         return $this;
     }        
@@ -244,7 +262,8 @@ class App {
      * @return string HTML 
      */
     private function init()
-    {    								
+    {
+        
         ob_start();
         
         try {

@@ -8,6 +8,6 @@ interface UserRepositoryInterface {
      * @param string $login
      * @return UserInterface
      */
-    public function getUserByLogin($login);
+    public function getUserByLogin($login, $domen='');
     
 }

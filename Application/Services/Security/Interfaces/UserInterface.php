@@ -10,6 +10,9 @@ interface UserInterface {
     /** @return string */
     public function getLogin();
     
+    /** @return integer */
+    public function getDomen();
+    
     /** @return string */
     public function getPasswordHash();
     

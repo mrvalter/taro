@@ -7,7 +7,6 @@
 
 use Composer\Autoload\ClassLoader as ClassLoader;
 use Classes\AjaxResponce as AjaxResponce;
-use Classes\Image as Image;
 use Services\Config as Config;
 use Services\Router as Router;
 use Services\RedirectManager as RedirectManager;
@@ -268,7 +267,7 @@ class App {
         
         try {
             $config = new Config($this->getConfigPath(), $this->getEnv());
-            $firewall = new Firewall();
+            $security = $this->makeSecurityFromConfig($config);
 
             $router = Router::createFromGlobals()	
                     ->withBundlesPath($this->getBundlesPath())

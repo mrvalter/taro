@@ -130,15 +130,32 @@ class DBSessionStorage extends NativeSessionStorage implements \SessionHandlerIn
    /**
     * Устанавливает значение записывать или нет
     */
-   public function setWriteMode($mode = false)
-   {
-       $this->write_sess = $mode;
-	   return $this;
-   }
+    public function setWriteMode($mode = false)
+    {
+        $this->write_sess = $mode;
+        return $this;
+    }
    
-   public function isDestroy()
-   {
+    public function isDestroy()
+    {
        return $this->isDestroied;
-   }             
+    }
+   
+    public function start()
+    {  
+        if($this->sessionStarted){
+            return $this;
+        }
+        
+        session_set_save_handler( 
+        array($this, 'open'), 
+        array($this, 'close'), 
+        array($this, 'read'), 
+        array($this, 'write'), 
+        array($this, 'destroy'), 
+        array($this, 'gc'));
+        
+        return parent::start();
+    }
    
 }

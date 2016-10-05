@@ -5,7 +5,7 @@ use \Services\Security\DBSession as DBSession;
 use \Services\Menu\MenuCollection as MenuCollection;
 use \Classes\ADUser as ADUser;
 
-class Security {
+class Security_old {
     
     const SESSION_DB = 'db';
     const SESSION_DEFAULT = 'default';

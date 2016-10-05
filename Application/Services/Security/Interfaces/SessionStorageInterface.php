@@ -35,6 +35,7 @@ interface SessionStorageInterface {
     public function isAuthorized();
     
     
+    /** @return SessionStorageInterface */
     public function start();
     
 }

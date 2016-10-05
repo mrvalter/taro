@@ -22,7 +22,8 @@ class NativeSessionStorage implements SessionStorageInterface{
     public function __construct($login='', $domen='')
     {        
         $this->login = $login;
-        $this->domen = $domen;        
+        $this->domen = $domen;
+        $this->authorize();
         
         
     }	    
@@ -83,6 +84,8 @@ class NativeSessionStorage implements SessionStorageInterface{
         }
         
         $this->sessionStarted = true;
+        
+        return $this;
     }   	    
     
     public function isAuthorized()

@@ -1,11 +1,12 @@
 <?php
 
-namespace Services;
+namespace Services\Security;
 use Services\Security\Authentication\AuthenticationManager;
 use Services\Security\Csrf\CsrfManager;
 
 use Services\Security\Interfaces\SessionStorageInterface;
 use Services\Security\Interfaces\UserRepositoryInterface;
+use Psr\Http\Message\RequestInterface;
 
 
 /**
@@ -58,6 +59,15 @@ class Security {
         $this->user = $user;
         
         return true;
+    }
+    
+    /**
+     * 
+     * @param string $path
+     */
+    public function getSubRightsForPath($path)
+    {
+        
     }
     
 }

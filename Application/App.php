@@ -15,6 +15,8 @@ use Services\Menu as Menu;
 use Services\Menu\MenuItem as MenuItem;
 use Services\Interfaces\ViewInterface as ViewInterface;
 use Services\Logger as Logger;
+use Services\Security\SessionStorage\NativeSessionStorage as SessionStorage;
+use Services\Firewall;
 
 /**
  * Front Controller (Singleton)
@@ -263,32 +265,45 @@ class App {
     private function init()
     {
         
-        ob_start();
         
+        
+        ob_start();
+                
         try {
-            $config = new Config($this->getConfigPath(), $this->getEnv());
-            $security = $this->makeSecurityFromConfig($config);
-
-            $router = Router::createFromGlobals()	
-                    ->withBundlesPath($this->getBundlesPath())
-                    ->withConfig($config)
-                    ->withFirewall();
-
-            die();
+            /* Стартуем сессию */
+            $sessionStorage = new SessionStorage();
+            $sessionStorage->start();                       
+        
+            /* Инициализируем конфиг */
+            $config = new Config($this->getConfigPath(), $this->getEnv());            
+            
+            /* Инициализируем роутер */
+            $router = Router::createFromGlobals()
+                ->withBundlesPath($this->getBundlesPath())
+                ->withConfig($config);
+                                                    
+            /* Инициализируем Контейнер Сервисов */
             $this->ServiceContainer = new ServiceContainer($config->get('services'));
-            $this->ServiceContainer->addService('_config', $config);
-            $this->ServiceContainer->addService('router', $router);
-            $this->ServiceContainer->addService('classloader', $this->classLoader);
-            $this->ServiceContainer->addService('firewall', $firewall);
-
-            //$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Classes");
-            //$this->classLoader->addMapItemUnshift($this->getBundlesPath()."/".$router->getBundleFromUrl()."/Controllers");
-
-            //$this->classLoader->addNamespace('Events', $bundlePath."/Events");
-//$this->ServiceContainer->addService('classLoader', $this->classLoader);
-
-            $logger = $this->getService('logger');												
-            $security = $this->getService('security'); 
+            $this->ServiceContainer->addService('config', $config);                                    
+            
+            /* Инициализируем файрволл */
+            $firewall = new Firewall($sessionStorage, $this->ServiceContainer, $config->get('security'));            
+            $this->ServiceContainer->addService('firewall', $firewall);            
+                                                                                        
+            /* Отправляем Запрос */
+            $router
+                ->withFirewall($firewall)
+                ->sendRequest();
+            
+            
+            
+            /* Получаем ответ */
+            $responce = $router->getResponce();
+            
+            var_dump($responce);
+            die('');
+                $logger = $this->getService('logger');
+                        
 
         }catch(AppException $e){
                 echo 'Системная ошибка !<br />';			

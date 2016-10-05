@@ -63,18 +63,7 @@ return array(
 					],
 				],
 			],
-		],
-		
-		/** Сервис безопасности */
-		'security' =>  [
-			'class'=> 'Services\Security',
-			'params' => [
-				'db'           => '@db',				
-				'router'       => '@router',
-				//'menu'         => '@menu',
-				'session_type' => 'default',  /* db, default */
-			],			
-		],
+		],				
 		
 		'mailer' => [
 			'class' =>'Services\Mailer',
@@ -104,19 +93,19 @@ return array(
 		'events' => [
 			'class' =>'Services\Events',
 			'params'=> [												
-				'db'=>'@db',
-				'config'=>'@_config',
-				'mailer'=>'@mailer',
-                'security'=>'@security'                
+                            'db'=>'@db',
+                            'config'=>'@_config',
+                            'mailer'=>'@mailer',
+                            'security'=>'@security'                
 			]
 		],
 		
 		'logger' => [
 			'class' =>'Services\Logger',
 			'params'=> [												
-				'dblog' => 0,
-				'systemlog' => 0,
-				'long_query_time'=>0				
+                            'dblog' => 0,
+                            'systemlog' => 0,
+                            'long_query_time'=>0				
 			]
 		],
 		

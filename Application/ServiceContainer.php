@@ -110,8 +110,15 @@ class ServiceContainer {
         $refParameters = $constructor->getParameters();
         $arguments = array();        
         if(sizeof($refParameters)){            
-            foreach($refParameters as $refParameter){                
-                $arguments[] = isset($resParams[$refParameter->name]) ? $resParams[$refParameter->name] : null;
+            foreach($refParameters as $i=>$refParameter){
+                $value = null;
+                if(isset($resParams[$refParameter->name])){
+                    $value = $resParams[$refParameter->name];
+                }elseif(isset($resParams[$i])){
+                    $value = $resParams[$i];
+                }
+                                
+                $arguments[] = $value;
             }
         }
                 

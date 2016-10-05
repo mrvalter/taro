@@ -7,6 +7,7 @@ use Psr\Http\Message\RequestInterface;
 use Services\Security\Authentication\AuthenticationManager;
 use Services\Security\Csrf\CsrfManager;
 use Services\Security\Interfaces\SessionStorageInterface;
+use Services\Router;
 
 
 
@@ -98,6 +99,13 @@ class Firewall {
         $security = new Security($authenticationManager, $csrfManager, $userRepository, $this->sessionStorage);
         
         return $security;
+    }
+    
+    public function buildExceptionResponse(\Exception $exception, Router $router)
+    {
+        var_dump('build Exception Responce');
+        var_dump($exception);                
+        die();
     }
     
     

@@ -4,7 +4,7 @@ namespace Services;
 use Psr\Http\Message\RequestInterface;
 use Services\HttpFound\ServerRequest;
 use Services\HttpFound\Request;
-use Services\HttpFound\Responce;
+use Services\HttpFound\Response;
 use Services\HttpFound\Uri;
 use Services\Config;
 use Services\Firewall;
@@ -51,8 +51,8 @@ class Router {
     /** @var Request */
     private $request;
     
-    /** @var Responce */
-    private $responce;
+    /** @var Response */
+    private $response;
     
     /** @var array */
     private $errors;
@@ -65,7 +65,7 @@ class Router {
     {
         
         $this->request = $request;
-        $this->responce = new Responce();
+        $this->response = new Response();
         $this->config = new Config();
 
         if(null !== $request) {
@@ -125,17 +125,33 @@ class Router {
     private function handleRequest()
     {
         
+        $controller = $this->getController();
+        $action = $this->getAction();
+        $bundle = $this->getRealBundle();
+        $bundlesPath = $this->bundlesPath;
+        
+        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller";
+        
+        if(!$bundle || !file_exists($classFile)){
+            throw new \FileNotFoundException("Не найден файл контроллера {$bundle}\\Controllers\\{$controller}Controller");
+        }
+        
+        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
+        $medthod = $action.'Action';
+        $refController = new ReflectionClass( $controllerClass );
+        
+        
         if(!$this->firewall->getSecurity()->authorize() && !$this->firewall->checkAccess($this->request)){
-            $this->responce = $this->createNeedAuthenticateResponce();
+            $this->response = $this->createNeedAuthenticateResponse();
             return true;
         }
         
         if(!$this->firewall->checkAccess($request)){
-            $this->responce = $this->createAccessDeniedResponce();
+            $this->response = $this->createAccessDeniedResponse();
             return true;
         }
         
-        $this->responce = $this->runAction();
+        $this->response = $this->runAction();
         
     }
     
@@ -172,35 +188,35 @@ class Router {
     
     
     /**
-     * @return Responce
+     * @return Response
      */
-    public function createNeedAuthenticateResponce()
+    public function createNeedAuthenticateResponse()
     {
         
-        return new Responce();
+        return new Response(401);
     }
     
-    /** @return Responce */
-    public function createAccessDeniedResponce()
+    /** @return Response */
+    public function createAccessDeniedResponse()
     {
         
-        return new Responce();
+        return new Response(403);
     }
     
-    public function createNotFoundResponce()
+    public  function createNotFoundResponse()
     {
         
-        return new Responce();
+        return new Response(404);
     }
     
     /**
      * 
-     * @return Responce
+     * @return Response
      */
-    public function getResponce()
+    public function getResponse()
     {
         
-        return $this->responce;
+        return $this->response;
     }
 	
     /**
@@ -254,7 +270,7 @@ class Router {
             $bundle = $this->getBundle();		
             $realBundle = $this->findRealBundle($bundlesPath, $bundle);
             if(null === $realBundle){
-                $this->responce = $this->createNotFoundResponce();
+                $this->response = $this->createNotFoundResponse();
                     
             }
 
@@ -302,19 +318,20 @@ class Router {
      */
     public function findRealBundle($bundlesPath, $bundle)
     {		
-            if(file_exists("$bundlesPath/$bundle")){			
-                    return $bundle;
+        if(file_exists("$bundlesPath/$bundle")){			
+                return $bundle;
+        }
+
+        foreach (new \DirectoryIterator($bundlesPath) as $file) {
+            if ($file->isDot()) continue;
+
+            if ($file->isDir() && strtolower($file->getFilename()) === $bundle) {
+                return $file->getFilename();
             }
-
-            foreach (new \DirectoryIterator($bundlesPath) as $file) {
-                    if ($file->isDot()) continue;
-
-                    if ($file->isDir() && strtolower($file->getFilename()) === $bundle) {
-                            return $file->getFilename();
-                    }
-            }
-
-            return null;
+        }
+        
+        file not found!
+                
     }
 
     /**

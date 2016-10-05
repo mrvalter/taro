@@ -289,20 +289,10 @@ class App {
             /* Инициализируем файрволл */
             $firewall = new Firewall($sessionStorage, $this->ServiceContainer, $config->get('security'));            
             $this->ServiceContainer->addService('firewall', $firewall);            
-                                                                                        
-            /* Отправляем Запрос */
-            $router
-                ->withFirewall($firewall)
-                ->sendRequest();
             
+            $router->withFirewall($firewall);
             
-            
-            /* Получаем ответ */
-            $responce = $router->getResponce();
-            
-            var_dump($responce);
-            die('');
-                $logger = $this->getService('logger');
+            //$logger = $this->getService('logger');
                         
 
         }catch(AppException $e){
@@ -313,35 +303,18 @@ class App {
 		
 		
         try{                        
-			
-            if(!$security->authorise() && !(strtolower($router->getController()) == 'index' && strtolower($router->getAction()) == 'login')){
-                $router->redirect('index', 'login');
-				die();
-            }													
-			
-            $menu = new Menu($this->getService('db'), $security->getUser(), $router->getPathWithoutBundleFromUrl());
-            $menu->setBundle($router->getBundleFromUrl());
+		
+            /* Отправляем Запрос */
             
-            if(!$router->getRequest()->isAjax() && $security->getUser()->isExists()){
-                $security->buildAllMenuRights($menu);
-            }
+            $router->sendRequest();                        
             
-            $this->ServiceContainer->addService('menu', $menu);
-			
-            $security->setMenuService($menu);
-			
-			
-            /* Строим параметры переданные в temp хранилище сессиии */
-            $this->mooveSessionUnreadToTmp();
-            $this->buildTmpRequestVars(); 
-            $view = $this->runController($router);			
-            //$params['menu'] = $this->getService('menu');
-            //$View->setParams($params);
-            $garbage = ob_get_clean();
-			
-            $router->getRequest()->isAjax() ? $view->showContentHTML() : $view->renderPage()->showPage();
-			$this->unsetSessionTmp();
-
+            /* Получаем ответ */
+            $response = $router->getResponse();
+            
+            var_dump($response);
+            die('');
+                                   		            
+            $garbage = ob_get_clean();			            
 			
             Logger::pushSystem($router->getBundle()." : ".$router->getController()." : ".$router->getAction());
             Logger::pushSystem(sprintf('Скрипт выполнялся %.4F сек.', microtime(true) - self::$startTime));
@@ -360,12 +333,18 @@ class App {
                     }
             }						
             
-        }catch (EccessDeniedException $e){			            
+        }catch (Exception $e){
+         
+            $response = $firewall->buildExceptionResponse($e, $router);
+            Router::sendResponce($response);
+            exit();            
+        }                
+        
+        /*catch (EccessDeniedException $e){			            
             $security->accessDeniedGenerate();
 			
         }catch (AppException $e){		
-            header('Content-Type: text/html; charset=utf-8');
-            //$router = $this->getService('router');
+            header('Content-Type: text/html; charset=utf-8');        
 
             if(!is_object($router)){
                     echo $e->getMessage().$e->getTraceAsString();
@@ -410,7 +389,9 @@ class App {
                     echo '</table>';
                 }			
 			
-        }
+        }*/
+        
+        exit();
     }
     
     private function buildTmpRequestVars()

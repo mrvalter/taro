@@ -131,7 +131,8 @@ class Router {
         $bundlesPath = $this->bundlesPath;
         
         $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller";
-        
+        var_dump($classFile);
+        die();
         if(!$bundle || !file_exists($classFile)){
             throw new \FileNotFoundException("Не найден файл контроллера {$bundle}\\Controllers\\{$controller}Controller");
         }
@@ -330,7 +331,7 @@ class Router {
             }
         }
         
-        file not found!
+      //   file not found!
                 
     }
 

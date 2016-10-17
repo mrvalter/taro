@@ -11,7 +11,7 @@ namespace Services;
 class Config {                       
     
     /** @var array*/
-    private $config;
+    private $config;                
     
     /** @var array */
     private $tags;    	
@@ -19,23 +19,20 @@ class Config {
     /** @var string */
     private $enviroment;
 
-    /** @var string[] */
-    private $configFiles;
-    
-    /** @var string[] */
-    private $securityFiles;
 
     /**
      * 
-     * @param string $enviroment    Переменная окружения (prod | dev | ...)
-     * @param string $pathToDir     Папка с основным конфигом
+     * @param string $enviroment           Переменная окружения (prod | dev | ...)
+     * @param string $pathToMainConfigDir  Папка с основным конфигом
      */
-    public function __construct($pathToDir, $enviroment='prod') 
+    public function __construct($pathToMainConfigDir, $enviroment='')
     {
-            $this->addFile($pathToDir);
-            $this->enviroment = $enviroment;
-            $this->tags = isset($config['_tags'])? $config['_tags'] : [];
-            $this->config = [];
+        
+        $this->enviroment = $enviroment;   
+        $this->config = array_replace_recursive(
+            $this->getArrayFromFile($pathToMainConfigDir.'/config.php', true),
+            $this->getArrayFromFile($pathToMainConfigDir.'/config_'.$this->enviroment.'.php', false)
+        );                        
     }
     
     /**
@@ -58,7 +55,7 @@ class Config {
      */
     public function getTags()
     {
-            return $this->tags;
+        return $this->tags;
     }
 
     /**
@@ -120,53 +117,50 @@ class Config {
     {
         
         $config = [];
-        if(!isset($this->configFiles[0])){
-            throw new \ConfigException('Не загружен конфигурационный файл');
-        }				
+        if(isset($this->configFiles[0])){                   				
+            foreach($this->configFiles as $file){
 
-        foreach($this->configFiles as $file){
+                $path = $file['path'];
+                $splFile = new \SplFileInfo($path);
 
-            $path = $file['path'];
-            $splFile = new \SplFileInfo($path);
-
-            if(!$splFile->isReadable()){
-                if($file['required']){
-                    throw new \FileNotFoundException('Не найден путь до конфига '.$path);
+                if(!$splFile->isReadable()){
+                    if($file['required']){
+                        throw new \FileNotFoundException('Не найден путь до конфига '.$path);
+                    }
+                    continue;
                 }
-                continue;
-            }
 
 
-            if($splFile->isDir()){
-                $config = array_replace_recursive(
+                if($splFile->isDir()){
+                    $config = array_replace_recursive(
+                        $config,
+                        $this->getArrayFromFile($path.'/config_prod.php', $file['required']),
+                        $this->getArrayFromFile($path.'/config_'.$this->enviroment.'.php', false)
+                    );                                                
+
+                }else{
+                    $config = array_replace_recursive(
                     $config,
-                    $this->getArrayFromFile($path.'/config_prod.php', $file['required']),
-                    $this->getArrayFromFile($path.'/config_'.$this->enviroment.'.php', false)
-                );                                                
-                
-            }else{
-                $config = array_replace_recursive(
-                $config,
-                $this->getArrayFromFile($path, $file['required'])
-                );
+                    $this->getArrayFromFile($path, $file['required'])
+                    );
+                }
             }
-        }
 
-        /* Секюрный конфиг переписывает все предыдущее с одинаковыми ключами */
-        foreach($this->configFiles as $file){
+            /* Секюрный конфиг переписывает все предыдущее с одинаковыми ключами */
+            foreach($this->configFiles as $file){
 
-            $path = $file['path'];
-            $splFile = new \SplFileInfo($path);           
+                $path = $file['path'];
+                $splFile = new \SplFileInfo($path);           
 
-            if($splFile->isDir()){
-                $securityArr = $this->getArrayFromFile($path.'/security.php', $file['required']);                
-                if(!empty($securityArr)){
-                    $config['services'] = array_merge($config['services'], $securityArr['services']);
-                }                
+                if($splFile->isDir()){
+                    $securityArr = $this->getArrayFromFile($path.'/security.php', $file['required']);                
+                    if(!empty($securityArr)){
+                        $config['services'] = array_merge($config['services'], $securityArr['services']);
+                    }                
+                }
             }
+        
         }
-        
-        
         
         $this->config = $this->replaceTags($config);
         $this->config['_tags'] = $this->getTags();

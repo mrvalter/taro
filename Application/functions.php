@@ -98,3 +98,56 @@ function vd ($text)
     printf("<pre>%s</pre>", print_r($text, true));
 }
 
+/**
+ * Create a new stream based on the input type.
+ *
+ * Options is an associative array that can contain the following keys:
+ * - metadata: Array of custom metadata.
+ * - size: Size of the stream.
+ *
+ * @param resource|string|null|int|float|bool|StreamInterface|callable $resource Entity body data
+ * @param array                                                        $options  Additional options
+ *
+ * @return Stream
+ * @throws \InvalidArgumentException if the $resource arg is not valid.
+ */
+function stream_for($resource = '', array $options = [])
+{
+    if (is_scalar($resource)) {
+        $stream = fopen('php://temp', 'r+');
+        if ($resource !== '') {
+            fwrite($stream, $resource);
+            fseek($stream, 0);
+        }
+        return new Stream($stream, $options);
+    }
+
+    switch (gettype($resource)) {
+        case 'resource':
+            return new Stream($resource, $options);
+        case 'object':
+            if ($resource instanceof StreamInterface) {
+                return $resource;
+            } elseif ($resource instanceof \Iterator) {
+                return new PumpStream(function () use ($resource) {
+                    if (!$resource->valid()) {
+                        return false;
+                    }
+                    $result = $resource->current();
+                    $resource->next();
+                    return $result;
+                }, $options);
+            } elseif (method_exists($resource, '__toString')) {
+                return stream_for((string) $resource, $options);
+            }
+            break;
+        case 'NULL':
+            return new Stream(fopen('php://temp', 'r+'), $options);
+    }
+
+    if (is_callable($resource)) {
+        return new PumpStream($resource, $options);
+    }
+
+    throw new \InvalidArgumentException('Invalid resource type: ' . gettype($resource));
+}

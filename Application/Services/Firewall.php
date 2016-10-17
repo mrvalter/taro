@@ -8,6 +8,7 @@ use Services\Security\Authentication\AuthenticationManager;
 use Services\Security\Csrf\CsrfManager;
 use Services\Security\Interfaces\SessionStorageInterface;
 use Services\Router;
+use Services\HttpFound\Response;
 
 
 
@@ -37,20 +38,20 @@ class Firewall {
     /** @var SessionStorageInterface */
     private $sessionStorage;
     
-    /** @var ServiceContainer */
-    private $serviceContainer;
-    
+    /** @var boolean */
+    private $xdebugLoaded;
     /**
      * 
      * @param Config $config
      */
-    public function __construct(SessionStorageInterface $sessionStorage, \ServiceContainer $serviceContainer, $config=[])
+    public function __construct(SessionStorageInterface $sessionStorage, $config=[], $enviroment='prod')
     {
         
         $this->sessionStorage = $sessionStorage->start();      
-        $this->config = $config;
-        $this->serviceContainer = $serviceContainer;
+        $this->config = $config;        
         $this->security = $this->createSecurity();
+        $this->xdebugLoaded = extension_loaded('xdebug');
+        $this->enviroment = $eviroment;
                 
         
     }        
@@ -102,10 +103,16 @@ class Firewall {
     }
     
     public function buildExceptionResponse(\Exception $exception, Router $router)
-    {
-        var_dump('build Exception Responce');
-        var_dump($exception);                
-        die();
+    {                
+        
+        //var_dump($exception->);
+        if($this->xdebugLoaded){
+            //xdebug_print_function_stack( $exception->getMessage() );
+        }else{
+            $responce = new Response(404, [], $exception->getMessage());            
+        }
+        
+        return $responce;        
     }
     
     

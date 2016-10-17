@@ -1,4 +1,5 @@
 <?php
+
 /** 
  * @autor Fedyakin Alexander
  * @copyright (c) 2015, Materia Medica Group
@@ -15,9 +16,11 @@ use Services\Menu as Menu;
 use Services\Menu\MenuItem as MenuItem;
 use Services\Interfaces\ViewInterface as ViewInterface;
 use Services\Logger as Logger;
-use Services\Security\SessionStorage\NativeSessionStorage as SessionStorage;
 use Services\Firewall;
 
+
+
+include_once 'functions.php';
 /**
  * Front Controller (Singleton)
  * Класс включает в себя инициализацию сервисов,
@@ -27,12 +30,21 @@ use Services\Firewall;
  */
 class App {
     
-    const ENV_PRODACTION = "prod";
-    const ENV_DEVELOPMENT = "dev";    	
+    /** @var string Путь до папки бандлов */
+    const BUNDLES_PATH = 'src';
+    
+    /** @var string Путь до папки шаблонов */
+    const LAYOUTS_PATH = 'layouts';
+    
+    /** @var string Путь до папки конфигов */
+    const MAIN_CONFIGS_PATH = 'config';
+
+    /** @var string окончания девовского енвиромента, когда показываются ошибки */
+    const ENVIROMENT_DEV_POSTFIX = 'dev';
     
     private static $_instance = null;        
     private static $startTime=0;
-	private static $widgets=array();
+    private static $widgets=array();
    
     
     /**
@@ -42,25 +54,33 @@ class App {
     private $env;
     
     /** @var string путь к публичной папке приложения */
-    private $httpPath;
+    private $httpPath;		
+    
+    /** @var string путь к папке с бандлами */
+    private $bundlesPath;		
+    
+    /** @var string путь к папке с шаблонами */
+    private $layoutsPath;
+    
+    /** @var string путь к папке с шаблонами */
+    private $mainConfigPath;
+    
+    
 	
-	/** @var string */
-    private $appPath;    
-	
-	/** @var string */
-    private $bundlesPath;
-	
-	/** @var string */
-    private $configPath;
-	
-	/** @var ClassLoader */
+    /** @var ClassLoader */
     private $classLoader;
 	        
     /** @var \ServiceContainer Объект контейнера сервисов */
     public $ServiceContainer = null;
     
     
-    private function __contruct(){}
+    private function __contruct(){
+        
+        $this->bundlesPath    = __DIR__.'/'.self::BUNDLES_PATH;
+        $this->layoutsPath    = __DIR__.'/'.self::LAYOUTS_PATH;
+        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;
+        
+    }
     
     /**
      * 
@@ -69,58 +89,33 @@ class App {
     public static function o()
     {
         return self::$_instance;
-    }    
+    }        
     
+                        
     
     /**
-     * Стартует приложение
-     * 
-     * @param string $httpPath Путь к директории публичной папке Приложения
+     * Возвращает обсолютный путь до папки конфига
+     * @return string 
      */
-    public static function run($httpPath, ClassLoader $loader)
+    public function getMainConfigPath()
     {
-		
-        self::$startTime = microtime(true);
-        
-        if(self::$_instance!=null)
-            return false;                
-        
-        $App = self::$_instance = new App();          				
-		
-        $App->setEnv(getenv('APP_ENV'))
-			->setErrorHandler()
-            ->setHttpPath($httpPath)
-            ->setAppPath(__DIR__)
-			->setConfigPath(__DIR__.'/config')
-            ->setBundlesPath(__DIR__.'/src')
-            ->setClassLoader($loader)
-            ->init();                
-		
-        die();
-    }            
-    
-    public function getBundlesPath()
-    {
-        
-        return $this->bundlesPath;        
-    }
+        return $this->mainConfigPath;
+    }       
     
     public function getPathToSelfBundle()
     {
         
         return $this->bundlesPath.'/'.$this->getService('router')->getBundle();        
-    }
+    }	    
 	
-    public function getPublicBundlePath()
-    {	
-        
-        return $this->bundlesPath.'/'.self::PUBLIC_BUNDLE;        
-    }
-	
+    /**
+     * 
+     * @return string Возвращает обсолютный пас к папки Application
+     */
     public function getAppPath()
     {
         
-        return $this->appPath;        
+        return __DIR__;
     }
 	
     /**
@@ -141,20 +136,7 @@ class App {
     {
         
         return $this->httpPath;
-    }
-    
-    public function getConfigPath()
-    {
-        
-        return $this->configPath;
-    }
-	
-    public function setConfigPath($path)
-    {
-        
-        $this->configPath = $path;
-        return $this;
-    }
+    }        	   
 	
     public function setClassLoader(ClassLoader $loader)
     {
@@ -169,25 +151,23 @@ class App {
      * @return \App
      */            
     public function setErrorHandler($errorH = null)
-    {
-        
-        $this->env = 'prod';
-		
+    {                
+                
         if($errorH !== null){
             error_reporting($errorH);
             ini_set('error_reporting', $errorH);
             return $this;
         }
         		
-		ini_set('display_errors', TRUE);
-		ini_set('display_startup_errors', TRUE);
-		
-        switch ($this->env){
-            case self::ENV_DEVELOPMENT :
-                error_reporting(E_ALL);										
-                break;
-            default:
-                error_reporting(E_ERROR);
+        ini_set('display_errors', TRUE);
+        ini_set('display_startup_errors', TRUE);
+        
+        
+        
+        if(substr($this->env, -3) === self::ENVIROMENT_DEV_POSTFIX){
+            error_reporting(E_ALL);
+        }else{                        
+            error_reporting(E_ERROR);
         }  
 				
         return $this;
@@ -207,29 +187,16 @@ class App {
         }
 
         return null;
-    }  	        
-    
-    /**
-     * Устанавливает путь до папки с Бандлами
-     * @param string $path Путь до папки с Бандлами
-     * @return \App
-     */
-    private function setBundlesPath($path)
-    {
-        
-        $this->bundlesPath = $path;
-        return $this;
-    }
+    }  	               
     
     /**
      * Устанавливает значение окружения
      * @param string $env
      * @return \App
      */    
-    private function setEnv($env)
-    {
-        
-        $this->env = self::ENV_DEVELOPMENT==$env ? self::ENV_DEVELOPMENT : self::ENV_PRODACTION;  
+    private function setEnv($env='')
+    {        
+        $this->env = $env;
         return $this;
     }
     
@@ -242,55 +209,69 @@ class App {
         
         $this->httpPath = $httpPath;
         return $this;
-    }
+    }            
+    
+    
+    
     
     /**
-     * Установка пути до приложения
+     * Стартует приложение
      * 
-     * @param string $appPath Путь до приложения
-     * @return \App
+     * @param string $httpPath Путь к директории публичной папки приложения
      */
-    private function setAppPath($appPath)
+    public static function run($httpPath, ClassLoader $loader)
     {
+		
+        self::$startTime = microtime(true);
         
-        $this->appPath = $appPath;
-        return $this;
-    }        
+        if(self::$_instance!=null)
+            return false;                
+        
+        $App = self::$_instance = new App();          				
+		
+        $App->setEnv(getenv('APP_ENV'))
+            ->setErrorHandler()
+            ->setHttpPath($httpPath)                  
+            ->setClassLoader($loader)            
+            ->initApplication()
+            ->runApplication();
+		
+        exit();
+    }
+    
+    
+    
     
     /**
      * @todo кешировать конфигурацию
-     * Инициализация сервисов, запуск контроллера
+     * Инициализация сервисов
      * @return string HTML 
      */
-    private function init()
+    private function initApplication()
     {
-        
-        
-        
+                        
         ob_start();
                 
         try {
-            /* Стартуем сессию */
-            $sessionStorage = new SessionStorage();
-            $sessionStorage->start();                       
-        
-            /* Инициализируем конфиг */
-            $config = new Config($this->getConfigPath(), $this->getEnv());            
+           
             
-            /* Инициализируем роутер */
-            $router = Router::createFromGlobals()
-                ->withBundlesPath($this->getBundlesPath())
-                ->withConfig($config);
-                                                    
-            /* Инициализируем Контейнер Сервисов */
+            
+        
+            /* Инициализируем Контейнер сервисов */
+            $this->ServiceContainer = new ServiceContainer();
+            
+            /* Инициализируем сервис конфига */
+            $config = new Config($this->mainConfigPath, $this->getEnv());            
+            $this->ServiceContainer->addService('config', $config);
+            
+            /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->get('services'));
-            $this->ServiceContainer->addService('config', $config);                                    
+            
+            $sessionStorage = $this->ServiceContainer->get('session_storage')->start();            
             
             /* Инициализируем файрволл */
-            $firewall = new Firewall($sessionStorage, $this->ServiceContainer, $config->get('security'));            
-            $this->ServiceContainer->addService('firewall', $firewall);            
-            
-            $router->withFirewall($firewall);
+            $firewall = new Firewall($sessionStorage, $config->get('firewall'));
+            $this->ServiceContainer->addService('firewall', $firewall);                                                            
             
             //$logger = $this->getService('logger');
                         
@@ -301,11 +282,11 @@ class App {
                 die();
         }		
 		
+        return $this;
 		
-        try{                        
+        //try{                        
 		
-            /* Отправляем Запрос */
-            
+            /* Отправляем Запрос */            
             $router->sendRequest();                        
             
             /* Получаем ответ */
@@ -332,66 +313,21 @@ class App {
                             $this->printConsole($log);
                     }
             }						
-            
-        }catch (Exception $e){
-         
-            $response = $firewall->buildExceptionResponse($e, $router);
-            Router::sendResponce($response);
-            exit();            
-        }                
-        
-        /*catch (EccessDeniedException $e){			            
-            $security->accessDeniedGenerate();
-			
-        }catch (AppException $e){		
-            header('Content-Type: text/html; charset=utf-8');        
-
-            if(!is_object($router)){
-                    echo $e->getMessage().$e->getTraceAsString();
-                    die();
-            }						
-
-            if($router->getRequest()->isAjax()){
-                    $aResponce = new AjaxResponce();
-                    $aResponce->addErrors($e->getMessage().$e->getTraceAsString());
-                    echo $aResponce->getResponce();
-                    die();
-            }				
-
-            $router->setNotFound();
-            $this->runController($router)->renderPage()->showPage();
-			
-            if($this->env == self::ENV_DEVELOPMENT){                				
-				$e->getMessage().' '.$e->showTable();				
-            }
-        }catch(PDOException $e){
-            if($router->getRequest()->isAjax()){
-                    $aResponce = new AjaxResponce();
-                    $aResponce->addErrors($e->getMessage().$e->getTraceAsString());
-                    echo $aResponce->getResponce();
-                    die();
-            }
-            
-            if(property_exists($e, 'xdebug_message')){
-                echo '<table>';
-                echo $e->xdebug_message;
-                echo '</table>';
-            }else{
-                echo $e->getMessage();
-            }
-			
-        }catch(Exception $e){
-                $router->setNotFound();
-                $this->runController($router)->renderPage()->showPage();
-                if($this->env == self::ENV_DEVELOPMENT){
-                    echo '<table>';
-                    echo $e->xdebug_message;
-                    echo '</table>';
-                }			
-			
-        }*/
-        
+                 
         exit();
+    }
+    
+    /**
+     * Запуск контроллера
+     */
+    private function runHttpApplication()
+    {        
+        $router = Router::createFromGlobals()
+            ->withBundlesPath($this->bundlesPath)
+            ->withConfig($this->getService('config'))
+            ->withFirewall($this->getService('firewall'));
+        $this->ServiceContainer->addService('router', $router);
+            
     }
     
     private function buildTmpRequestVars()

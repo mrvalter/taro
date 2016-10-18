@@ -1,15 +1,19 @@
 <?php
 namespace Services;
-
-use Services\Config;
-use Services\Security\Security;
-use Psr\Http\Message\RequestInterface;
+use Services\Interfaces\FirewallInterface;
+use Services\Security\Interfaces\SessionStorageInterface;
+use Services\Security\Interfaces\UserRepositoryInterface;
+use Services\Security\Interfaces\AuthenticatorInterface;
 use Services\Security\Authentication\AuthenticationManager;
 use Services\Security\Csrf\CsrfManager;
-use Services\Security\Interfaces\SessionStorageInterface;
-use Services\Router;
+use Services\Security\Security;
 use Services\HttpFound\Response;
+use Services\Config;
+use Services\Router;
 
+use Composer\Autoload\ClassLoader;
+
+use Psr\Http\Message\RequestInterface;
 
 
 /**
@@ -26,37 +30,80 @@ use Services\HttpFound\Response;
  * модифицирует исходящие данные если это требуется.
  * Пункт в конфиге - security
  */
-class Firewall {
+class Firewall implements FirewallInterface{
     
     
     /** @var array */
-    private $config;
-    
+    private $config;    
+	
     /** @var Security */
-    private $security;
-    
-    /** @var SessionStorageInterface */
-    private $sessionStorage;
-    
+    private $security;    
+    	
     /** @var boolean */
     private $xdebugLoaded;
+	
+	/** @var ClassLoader */
+	private $autoloader;
+	
+	/** @var array */
+	private $requireBundles;
+	
+	/** var string */
+	private $bundlesPath;
     /**
      * 
      * @param Config $config
      */
-    public function __construct(SessionStorageInterface $sessionStorage, $config=[], $enviroment='prod')
-    {
-        
-        $this->sessionStorage = $sessionStorage->start();      
-        $this->config = $config;        
-        $this->security = $this->createSecurity();
+    public function __construct(
+		SessionStorageInterface $sessionStorage, 
+		AuthenticatorInterface $authentificator,
+		UserRepositoryInterface $userRepository,
+		ClassLoader $autoloader
+		
+	){
+        $sessionStorage->start();
+		
+		$authenticationManager = new AuthenticationManager (
+            $authentificator,
+            $sessionStorage
+        );
+		
+		$this->autoloader = $autoloader;
+        $this->security = new Security($authenticationManager, new CsrfManager(), $userRepository, $sessionStorage);        
         $this->xdebugLoaded = extension_loaded('xdebug');
-        $this->enviroment = $eviroment;
-                
-        
-    }        
+		$this->requireBundles = [];
+		
+    }      
     
-    
+	/**
+	 * 
+	 * @return string
+	 */
+	public function getBundlesPath()
+	{
+		return $this->bundlesPath;
+	}
+	
+	public function setConfig(array $config=[])
+	{
+		
+		$this->config = $config;
+		$this->bundlesPath = $config['bundles_path'];
+		$this->requireBundles();
+		
+		return $this;
+	}    		
+	
+	/**
+	 * Ищет подключенный бандл по имени
+	 * @param string $name
+	 * @return string|false
+	 */
+	public function findBundleByName($name)
+	{
+		$name = strtolower($name);
+		return isset($this->requireBundles[$name])? $this->requireBundles[$name] : false;
+	}
     /**
      * 
      * @return  Security
@@ -65,7 +112,7 @@ class Firewall {
     {
         return $this->security;
     }
-    
+    	
     /**
      * 
      * @param Request $request
@@ -73,7 +120,9 @@ class Firewall {
      */
     public function checkAccess(RequestInterface $request)
     {                                
-        
+        $publicPathes = isset($this->config['public_urls'][0])? $this->config['public_urls'][0] : [];
+		$path = $request->getUri()->getPath();
+		
         return false;
     }
     
@@ -86,21 +135,7 @@ class Firewall {
     {
         
         return false;
-    }
-    
-    public function createSecurity()
-    {                
-        $authenticationManager = new AuthenticationManager(
-            $this->serviceContainer->get('authenticator'),
-            $this->sessionStorage
-        );
-        
-        $csrfManager = new CsrfManager();
-        $userRepository = $this->serviceContainer->get('user_repository');        
-        $security = new Security($authenticationManager, $csrfManager, $userRepository, $this->sessionStorage);
-        
-        return $security;
-    }
+    }       
     
     public function buildExceptionResponse(\Exception $exception, Router $router)
     {                
@@ -115,6 +150,25 @@ class Firewall {
         return $responce;        
     }
     
-    
+	/**
+	 * Добавляет разрешенные бандлы в автозагрузку
+	 * @param string $bundlesPath
+	 * @return \Services\Firewall
+	 */
+    private function requireBundles()
+	{
+		
+		if(!isset($this->config['require_bundles'][0]) || !$this->bundlesPath){
+			return $this;
+		}
+		
+		$this->requireBundles = [];
+		foreach($this->config['require_bundles'] as $bundleName) {
+			$this->autoloader->add("$bundleName\\", $this->bundlesPath);
+			$this->requireBundles[strtolower($bundleName)] = $bundleName;
+		}
+		
+		return $this;
+	}
     
 }

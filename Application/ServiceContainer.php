@@ -17,9 +17,9 @@ class ServiceContainer {
      * @param Config $config 
      * 
      */
-    public function __construct(array $config=[]) 
-    {                
-        $this->config = $config;        
+    public function __construct(array $config=[])
+    {
+        $this->config = $config;
     }
     
     public function addService($name, $object)
@@ -61,7 +61,7 @@ class ServiceContainer {
      */
     private function initService($name, &$services=array())
     {      
-				
+						
         if(isset($this->services[$name])){
             return $this->services[$name];
         }

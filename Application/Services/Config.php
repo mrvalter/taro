@@ -32,7 +32,8 @@ class Config {
         $this->config = array_replace_recursive(
             $this->getArrayFromFile($pathToMainConfigDir.'/config.php', true),
             $this->getArrayFromFile($pathToMainConfigDir.'/config_'.$this->enviroment.'.php', false)
-        );                        
+        );
+		$this->tags = [];
     }
     
     /**

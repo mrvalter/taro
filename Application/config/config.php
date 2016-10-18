@@ -20,17 +20,32 @@ return array(
     'admin_mails' => [
         'fedyakinas@master'
     ],
+	
+	'firewall' => [
 		
+		'require_bundles'=>[
+			'Swar_Bundle'
+		],
+		
+		'public_urls'=>[
+			'/',
+			'/swar',
+			'/test/test'
+		]
+	],
+	
+	
     /** 
      * Сервисы 
      * Конфигурационный сервис config, зарезервирован по умолчанию
      * config class = Services\Config
      */
-    'services' => [
-        
-        'config'  => 'RESERVED',        
-        'router'  => 'RESERVED',
-        'menu'    => 'RESERVED',
+    'services' => [        
+        'config'      => 'RESERVED', // сервис конфигурации 		
+        'router'      => 'RESERVED', // сервис роутинга/		
+		'autoloader'  => 'RESERVED', // сервис подгрузки классов
+		
+        'menu'        => 'RESERVED',
 	
         'user_repository' => [
             'class' => 'Classes\\UserRepository'
@@ -40,16 +55,25 @@ return array(
             'class'  => 'Services\\Security\\Authentication\\DbAuthenticator',
             'params' => ['@user_repository']
         ],
-        
         /*'authenticator'   => [
             'class'  => 'Services\\Security\\Authentication\\LdapAuthenticator',
             'params' => ['@user_repository', '@ldap']
         ],*/
-        
-        'session_storage'=>[
+		
+		'session_storage' => [
             'class' =>'Services\Security\SessionStorage\NativeSessionStorage',
-        ],               
-        
+        ],  
+		
+		'firewall' => [
+			'class'  => 'Services\\Firewall',
+			'params' => [
+				'@session_storage', 
+				'@authenticator', 
+				'@user_repository',
+				'@autoloader'
+			]
+		],                                         				
+		
         'db'=>[
             'class'=> 'Services\DB',
             'params'=>[

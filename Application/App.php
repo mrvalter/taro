@@ -16,7 +16,6 @@ use Services\Menu as Menu;
 use Services\Menu\MenuItem as MenuItem;
 use Services\Interfaces\ViewInterface as ViewInterface;
 use Services\Logger as Logger;
-use Services\Firewall;
 
 
 
@@ -74,12 +73,12 @@ class App {
     public $ServiceContainer = null;
     
     
-    private function __contruct(){
-        
+    private function __construct()
+	{
+		        
         $this->bundlesPath    = __DIR__.'/'.self::BUNDLES_PATH;
         $this->layoutsPath    = __DIR__.'/'.self::LAYOUTS_PATH;
-        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;
-        
+        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;        
     }
     
     /**
@@ -234,12 +233,22 @@ class App {
             ->setHttpPath($httpPath)                  
             ->setClassLoader($loader)            
             ->initApplication()
-            ->runApplication();
+            ->runHttpApplication();
 		
         exit();
     }
     
-    
+	/** 
+	 * Запускает приложение в редиме консоли
+	 */
+    public function runC()
+	{
+		$App = self::$_instance = new App(); 
+		$App->setEnv('console')
+            ->setErrorHandler()                            
+            ->setClassLoader($loader)
+            ->initApplication();            
+	}
     
     
     /**
@@ -253,26 +262,23 @@ class App {
         ob_start();
                 
         try {
-           
-            
-            
-        
-            /* Инициализируем Контейнер сервисов */
-            $this->ServiceContainer = new ServiceContainer();
-            
-            /* Инициализируем сервис конфига */
+			
+			/* Инициализируем сервис конфига */
             $config = new Config($this->mainConfigPath, $this->getEnv());            
-            $this->ServiceContainer->addService('config', $config);
-            
-            /* Подгружаем сервисы */
-            $this->ServiceContainer = new ServiceContainer($config->get('services'));
-            
-            $sessionStorage = $this->ServiceContainer->get('session_storage')->start();            
-            
+						
+            /* Инициализируем Контейнер сервисов */
+            $this->ServiceContainer = new ServiceContainer($config->get('services'));                        
+            $this->ServiceContainer->addService('config', $config);            			
+            $this->ServiceContainer->addService('autoloader', $this->classLoader);
             /* Инициализируем файрволл */
-            $firewall = new Firewall($sessionStorage, $config->get('firewall'));
-            $this->ServiceContainer->addService('firewall', $firewall);                                                            
             
+			$fwConf = $config->get('firewall');
+			$fwConf['bundles_path'] = $this->bundlesPath;
+			$firewall = $this->getService('firewall')->setConfig($fwConf);		
+			
+			Router::setFirewall($firewall);			
+			
+			            
             //$logger = $this->getService('logger');
                         
 
@@ -321,12 +327,16 @@ class App {
      * Запуск контроллера
      */
     private function runHttpApplication()
-    {        
-        $router = Router::createFromGlobals()
-            ->withBundlesPath($this->bundlesPath)
-            ->withConfig($this->getService('config'))
-            ->withFirewall($this->getService('firewall'));
-        $this->ServiceContainer->addService('router', $router);
+    {
+        $router = Router::createFromGlobals();
+		$this->ServiceContainer->addService('router', $router);
+		$response = $router
+			->withConfig($this->getService('config'))
+			->sendRequest()
+			->getResponse();
+		
+		var_dump($response);
+		die('i get response');
             
     }
     

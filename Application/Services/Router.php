@@ -138,72 +138,7 @@ class Router {
         }
         
 		return $this;
-    }
-    
-    private function handleRequest()
-    {
-        
-        $controller = $this->getController();
-        $action = $this->getAction();
-        $bundle = $this->getRealBundle();
-        $bundlesPath = $this->getFirewall()->getBundlesPath();
-        
-        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller";                
-        
-        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
-		
-		var_dump($controllerClass);
-		
-        $medthod = $action.'Action';
-        $refController = new \ReflectionClass( $controllerClass );
-        		
-        $firewall = $this->getFirewall();
-		
-        if(!$firewall->getSecurity()->authorize() && !$firewall->checkAccess($this->request)){
-            $this->response = $this->createNeedAuthenticateResponse();
-            return true;
-        }
-        
-        if(!$this->firewall->checkAccess($request)){
-            $this->response = $this->createAccessDeniedResponse();
-            return true;
-        }
-        
-        $this->response = $this->runAction();
-        
-    }
-    
-    
-    private function runAction()
-    {
-        
-        $controller = $this->getController();
-        $action = $this->getAction();
-        $bundle = $this->getRealBundle();
-        $bundlesPath = $this->bundlesPath;
-        
-        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
-        $medthod = $action.'Action';
-        
-        $rights = $this->firewall->getSecurity()->getSubRights("$controller/$action");
-        
-        $refController = new ReflectionClass( $controllerClass );
-		        
-        if(!$refController->isSubclassOf('\Classes\Controller')){
-            throw new ControllerException("Контроллер должен наследовать класс \Classes\Controller ($bundle\\$controller) ");
-        }                
-        
-        $refMethod = $refController->getMethod($action);                
-        $refParams  = $refMethod->getParameters();
-        
-        $queryParams = $this->request->getUri()->getQuery();
-        $pathParams = $this->params;
-        
-        var_dump($refParams);
-        die('ddssd');
-    }
-    
-    
+    }                
     
     /**
      * @return Response
@@ -459,6 +394,72 @@ class Router {
 		return true;
     }
 
+	
+	private function handleRequest()
+    {
+        
+        $controller = $this->getController();
+        $action = $this->getAction();
+        $bundle = $this->getRealBundle();
+        $bundlesPath = $this->getFirewall()->getBundlesPath();
+        
+        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller";                
+        
+        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
+		
+		var_dump($controllerClass);
+		
+        $medthod = $action.'Action';		
+		
+        $refController = new \ReflectionClass( $controllerClass );
+        		
+        $firewall = $this->getFirewall();
+		
+        if(!$firewall->getSecurity()->authorize() && !$firewall->checkAccess($this->request)){
+            $this->response = $this->createNeedAuthenticateResponse();
+            return true;
+        }
+        
+        if(!$this->firewall->checkAccess($request)){
+            $this->response = $this->createAccessDeniedResponse();
+            return true;
+        }
+        
+        $this->response = $this->runAction();
+        
+    }
+    
+    
+    private function runAction()
+    {
+        
+        $controller = $this->getController();
+        $action = $this->getAction();
+        $bundle = $this->getRealBundle();
+        $bundlesPath = $this->bundlesPath;
+        
+        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
+        $medthod = $action.'Action';
+        
+        $rights = $this->firewall->getSecurity()->getSubRights("$controller/$action");
+        
+        $refController = new ReflectionClass( $controllerClass );
+		        
+        if(!$refController->isSubclassOf('\Classes\Controller')){
+            throw new ControllerException("Контроллер должен наследовать класс \Classes\Controller ($bundle\\$controller) ");
+        }                
+        
+        $refMethod = $refController->getMethod($action);                
+        $refParams  = $refMethod->getParameters();
+        
+        $queryParams = $this->request->getUri()->getQuery();
+        $pathParams = $this->params;
+        
+        var_dump($refParams);
+        die('ddssd');
+    }
+	
+	
     /**
      * 
      * @param string $uri
@@ -467,7 +468,7 @@ class Router {
      * @param string $version
      * @return \Services\Router
      */
-    static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
+    public static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
     {
             if(!preg_match('~^(https?:\/\/)?([\w\.]+)\.([a-z]{2,6}\.?)(\/[\w\.]*)*\/?$~', $uri, $result))
             {

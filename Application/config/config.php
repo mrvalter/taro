@@ -22,6 +22,7 @@ return array(
     ],
 	
 	'firewall' => [
+		'error_reporting'=> E_ALL,
 		
 		'require_bundles'=>[
 			'Swar_Bundle'

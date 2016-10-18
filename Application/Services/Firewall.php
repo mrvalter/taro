@@ -48,9 +48,13 @@ class Firewall implements FirewallInterface{
 	/** @var array */
 	private $requireBundles;
 	
-	/** var string */
+	/** @var string */
 	private $bundlesPath;
-    /**
+    
+	/** @var integer */
+	private $errorReporting;
+	
+	/**
      * 
      * @param Config $config
      */
@@ -76,6 +80,15 @@ class Firewall implements FirewallInterface{
     }      
     
 	/**
+     * 
+     * @return  Security
+     */
+    public function getSecurity()
+    {
+        return $this->security;
+    }
+	
+	/**
 	 * 
 	 * @return string
 	 */
@@ -90,9 +103,45 @@ class Firewall implements FirewallInterface{
 		$this->config = $config;
 		$this->bundlesPath = $config['bundles_path'];
 		$this->requireBundles();
+		$this->setErrorReporting();
 		
 		return $this;
 	}    		
+		
+	public function getExceptionResponse(\Exception $exception)
+    {                
+        
+        if(in_array($this->errorReporting, [E_ALL, E_ERROR] )){
+			
+		}
+		
+		
+		die('eee');
+        if($this->xdebugLoaded){
+            //xdebug_print_function_stack( $exception->getMessage() );
+        }else{
+            $response = new Response(404, [], $exception->getMessage());            
+        }
+        
+        return $response;        
+    }
+	
+	public function setErrorReporting()
+	{		
+		$errorH = isset($this->config['error_reporting'])? $this->config['error_reporting'] : 0;
+		if($errorH){
+			ini_set('display_errors', TRUE);
+		}else{
+			if($this->xdebugLoaded){
+				xdebug_disable();
+			}
+		}
+		
+		error_reporting($errorH);
+		
+		$this->errorReporting = $errorH;
+		return $this;
+	}
 	
 	/**
 	 * Ищет подключенный бандл по имени
@@ -103,15 +152,7 @@ class Firewall implements FirewallInterface{
 	{
 		$name = strtolower($name);
 		return isset($this->requireBundles[$name])? $this->requireBundles[$name] : false;
-	}
-    /**
-     * 
-     * @return  Security
-     */
-    public function getSecurity()
-    {
-        return $this->security;
-    }
+	}    
     	
     /**
      * 
@@ -135,20 +176,7 @@ class Firewall implements FirewallInterface{
     {
         
         return false;
-    }       
-    
-    public function buildExceptionResponse(\Exception $exception, Router $router)
-    {                
-        
-        //var_dump($exception->);
-        if($this->xdebugLoaded){
-            //xdebug_print_function_stack( $exception->getMessage() );
-        }else{
-            $responce = new Response(404, [], $exception->getMessage());            
-        }
-        
-        return $responce;        
-    }
+    }               
     
 	/**
 	 * Добавляет разрешенные бандлы в автозагрузку

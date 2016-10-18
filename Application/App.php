@@ -143,35 +143,7 @@ class App {
         $this->classLoader = $loader;     
         return $this;
     }
-    
-    /**
-     * Устанавливает способ отображения ошибок
-     * @param int $errorH (E_ALL, E_ERROR)
-     * @return \App
-     */            
-    public function setErrorHandler($errorH = null)
-    {                
-                
-        if($errorH !== null){
-            error_reporting($errorH);
-            ini_set('error_reporting', $errorH);
-            return $this;
-        }
-        		
-        ini_set('display_errors', TRUE);
-        ini_set('display_startup_errors', TRUE);
         
-        
-        
-        if(substr($this->env, -3) === self::ENVIROMENT_DEV_POSTFIX){
-            error_reporting(E_ALL);
-        }else{                        
-            error_reporting(E_ERROR);
-        }  
-				
-        return $this;
-    }
-    
     /**
      * Возвращает объект сервиса, сохраняя его в хранилище сервисов
      * 
@@ -220,21 +192,25 @@ class App {
      */
     public static function run($httpPath, ClassLoader $loader)
     {
+		if(self::$_instance!=null)
+            return false;
 		
-        self::$startTime = microtime(true);
-        
-        if(self::$_instance!=null)
-            return false;                
+        self::$startTime = microtime(true);                            
         
         $App = self::$_instance = new App();          				
 		
-        $App->setEnv(getenv('APP_ENV'))
-            ->setErrorHandler()
-            ->setHttpPath($httpPath)                  
-            ->setClassLoader($loader)            
-            ->initApplication()
-            ->runHttpApplication();
+        $App->setEnv(getenv('APP_ENV'))            
+            ->setHttpPath($httpPath)               
+            ->setClassLoader($loader)
+            ->initApplication();		
 		
+		try {
+            $responce = $App->runHttpApplication();
+		}catch (\Exception $e){
+			$responce =$App->getService('firewall')->getExceptionResponse($e);
+		}
+		
+		var_dump($responce);
         exit();
     }
     
@@ -257,10 +233,7 @@ class App {
      * @return string HTML 
      */
     private function initApplication()
-    {
-                        
-        ob_start();
-                
+    {                                                
         try {
 			
 			/* Инициализируем сервис конфига */
@@ -272,19 +245,22 @@ class App {
             $this->ServiceContainer->addService('autoloader', $this->classLoader);
             /* Инициализируем файрволл */
             
-			$fwConf = $config->get('firewall');
-			$fwConf['bundles_path'] = $this->bundlesPath;
-			$firewall = $this->getService('firewall')->setConfig($fwConf);		
+			$fwConf = $config->get('firewall');			
+			$fwConf['bundles_path'] = 
+			$this->bundlesPath = 
+				!isset($fwConf['bundles_path']) || !trim($fwConf['bundles_path']) ? $this->bundlesPath : trim($fwConf['bundles_path']);
+			$firewall = $this->getService('firewall')->setConfig($fwConf);
 			
-			Router::setFirewall($firewall);			
+			Router::setFirewall($firewall);		
 			
 			            
             //$logger = $this->getService('logger');
                         
 
-        }catch(AppException $e){
+        }catch(\Exception $e){
                 echo 'Системная ошибка !<br />';			
-                $e->showTable();
+                echo $e->getMessage.'<br />';
+				$e->getTraceAsString.'<br />';
                 die();
         }		
 		
@@ -328,15 +304,15 @@ class App {
      */
     private function runHttpApplication()
     {
+		
         $router = Router::createFromGlobals();
 		$this->ServiceContainer->addService('router', $router);
-		$response = $router
+		return $router
 			->withConfig($this->getService('config'))
 			->sendRequest()
 			->getResponse();
 		
-		var_dump($response);
-		die('i get response');
+		
             
     }
     

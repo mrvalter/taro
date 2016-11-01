@@ -199,7 +199,7 @@ class App {
         
         $App = self::$_instance = new App();          				
 		
-        $App->setEnv(getenv('APP_ENV'))            
+        $App->setEnv(getenv('APP_ENV'))           
             ->setHttpPath($httpPath)               
             ->setClassLoader($loader)
             ->initApplication();		

@@ -32,28 +32,31 @@ class Firewall {
     /** @var array */
     private $config;
     
-    /** @var Security */
-    private $security;
+    /** @var array */
+    private $requireBundles;
     
-    /** @var SessionStorageInterface */
-    private $sessionStorage;
+    /** @var Security */
+    private $security;    
     
     /** @var boolean */
     private $xdebugLoaded;
+    
     /**
-     * 
-     * @param Config $config
+     * @param Security $security
+     * @param array $config
      */
-    public function __construct(SessionStorageInterface $sessionStorage, $config=[], $enviroment='prod')
+    public function __construct(Security $security, $config=[], $classLoader, $bundlesPath)
     {
-        
-        $this->sessionStorage = $sessionStorage->start();      
-        $this->config = $config;        
-        $this->security = $this->createSecurity();
-        $this->xdebugLoaded = extension_loaded('xdebug');
-        $this->enviroment = $eviroment;
+        if(isset($config['required_bundles']) && sizeof($config['required_bundles'])){
+            foreach($config['required_bundles'] as $name=>$bundle){
+                $this->requireBundles[strtolower($name)] = $bundle;
+                $classLoader->add('Swar_Bundle\\', $bundlesPath);
+            }
+        }
                 
-        
+        $this->config = $config;        
+        $this->security = $security;
+        $this->xdebugLoaded = extension_loaded('xdebug');        
     }        
     
     
@@ -64,6 +67,22 @@ class Firewall {
     public function getSecurity()
     {
         return $this->security;
+    }
+    
+    /**
+     * 
+     * @param string $bundle
+     * @return string|false
+     * 
+     */
+    public function getRealBundleByName($bundle)
+    {        
+        $bundle = strtolower($bundle);
+        if(isset($this->requireBundles[$bundle])){
+            return $this->requireBundles[$bundle];
+        }
+        
+        return false;
     }
     
     /**
@@ -86,21 +105,7 @@ class Firewall {
     {
         
         return false;
-    }
-    
-    public function createSecurity()
-    {                
-        $authenticationManager = new AuthenticationManager(
-            $this->serviceContainer->get('authenticator'),
-            $this->sessionStorage
-        );
-        
-        $csrfManager = new CsrfManager();
-        $userRepository = $this->serviceContainer->get('user_repository');        
-        $security = new Security($authenticationManager, $csrfManager, $userRepository, $this->sessionStorage);
-        
-        return $security;
-    }
+    }       
     
     public function buildExceptionResponse(\Exception $exception, Router $router)
     {                

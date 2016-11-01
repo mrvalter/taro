@@ -65,8 +65,7 @@ class Router {
     {
         
         $this->request = $request;
-        $this->response = new Response();
-        $this->config = new Config();
+        $this->response = new Response();        
 
         if(null !== $request) {
             $uri = $request->getUri();				               				
@@ -117,7 +116,7 @@ class Router {
         $host = $this->request->getUri()->getHost();
         
         if($host === 'localhost' || $host === $_SERVER['HTTP_HOST']){
-            $this->handleRequest();
+            return $this->handleRequest();
         }
         
     }
@@ -130,27 +129,25 @@ class Router {
         $bundle = $this->getRealBundle();
         $bundlesPath = $this->bundlesPath;
         
-        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller";
-        var_dump($classFile);
-        die();
+        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller.php";
+               
         if(!$bundle || !file_exists($classFile)){
             throw new \FileNotFoundException("Не найден файл контроллера {$bundle}\\Controllers\\{$controller}Controller");
         }
         
         $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
         $medthod = $action.'Action';
-        $refController = new ReflectionClass( $controllerClass );
+        $refController = new \ReflectionClass( $controllerClass );
         
         
         if(!$this->firewall->getSecurity()->authorize() && !$this->firewall->checkAccess($this->request)){
-            $this->response = $this->createNeedAuthenticateResponse();
-            return true;
+           return $this->response = $this->createNeedAuthenticateResponse();            
         }
         
         if(!$this->firewall->checkAccess($request)){
-            $this->response = $this->createAccessDeniedResponse();
-            return true;
+            return $this->response = $this->createAccessDeniedResponse();            
         }
+        
         
         $this->response = $this->runAction();
         
@@ -267,26 +264,25 @@ class Router {
      */
     public function withConfig(Config $config)
     {	
-            $bundlesPath = $this->bundlesPath;
-            $bundle = $this->getBundle();		
-            $realBundle = $this->findRealBundle($bundlesPath, $bundle);
-            if(null === $realBundle){
-                $this->response = $this->createNotFoundResponse();
-                    
-            }
+        $bundlesPath = $this->bundlesPath;
+        $bundle = $this->getBundle();		
+        $realBundle = $this->findRealBundle($bundlesPath, $bundle);
+        if(null == $realBundle){
+            $this->response = $this->createNotFoundResponse();                    
+        }
 
-            $config->addTags([
-                '%bundle%'     => $realBundle,
-                '%bundlePath%' => "$bundlesPath/$realBundle",
-                '%public%'     => self::defaultBundleName
-            ]);		
+        $config->addTags([
+            '%bundle%'     => $realBundle,
+            '%bundlePath%' => "$bundlesPath/$realBundle",
+            '%public%'     => self::defaultBundleName
+        ]);		
 
 
-            $this->realBundle = $realBundle;
-            $config->addFile("$bundlesPath/$realBundle", false);
-            $this->config = $config->make();
+        $this->realBundle = $realBundle;
+        $config->addFile("$bundlesPath/$realBundle", false);
+        $this->config = $config->make();
 
-            return $this;
+        return $this;
     }
     
     public function withFirewall(Firewall $firewall)
@@ -319,20 +315,12 @@ class Router {
      */
     public function findRealBundle($bundlesPath, $bundle)
     {		
-        if(file_exists("$bundlesPath/$bundle")){			
-                return $bundle;
-        }
-
-        foreach (new \DirectoryIterator($bundlesPath) as $file) {
-            if ($file->isDot()) continue;
-
-            if ($file->isDir() && strtolower($file->getFilename()) === $bundle) {
-                return $file->getFilename();
-            }
+        $realBundle = $this->firewall->getRealBundleByName($bundle);
+        if(!$realBundle || !file_exists($bundlesPath.'/'.$realBundle)){
+            return null;
         }
         
-      //   file not found!
-                
+        return $realBundle;
     }
 
     /**

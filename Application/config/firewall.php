@@ -6,7 +6,7 @@ return [
     ],
     
     'required_bundles' => [
-        
+        'swar' => 'Swar_Bundle',
     ]
       
 ];

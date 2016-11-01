@@ -24,8 +24,8 @@ include_once 'functions.php';
 /**
  * Front Controller (Singleton)
  * Класс включает в себя инициализацию сервисов,
- * получение нужного Объекта-контроллера с помощью роутинга
- * Вызов контроллера
+ * инициализация роутера, получение от него ответа
+ * 
  * 
  */
 class App {
@@ -74,12 +74,11 @@ class App {
     public $ServiceContainer = null;
     
     
-    private function __contruct(){
-        
+    private function __construct()
+    {        
         $this->bundlesPath    = __DIR__.'/'.self::BUNDLES_PATH;
         $this->layoutsPath    = __DIR__.'/'.self::LAYOUTS_PATH;
-        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;
-        
+        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;                
     }
     
     /**
@@ -224,17 +223,17 @@ class App {
 		
         self::$startTime = microtime(true);
         
-        if(self::$_instance!=null)
+        if(self::$_instance !== null)
             return false;                
+                
+        self::$_instance = $App = new App();	
         
-        $App = self::$_instance = new App();          				
-		
         $App->setEnv(getenv('APP_ENV'))
             ->setErrorHandler()
             ->setHttpPath($httpPath)                  
             ->setClassLoader($loader)            
             ->initApplication()
-            ->runApplication();
+            ->runHttpApplication();
 		
         exit();
     }
@@ -252,25 +251,22 @@ class App {
                         
         ob_start();
                 
-        try {
-           
-            
-            
+        try {                                   
         
             /* Инициализируем Контейнер сервисов */
             $this->ServiceContainer = new ServiceContainer();
             
-            /* Инициализируем сервис конфига */
-            $config = new Config($this->mainConfigPath, $this->getEnv());            
-            $this->ServiceContainer->addService('config', $config);
+            /* Инициализируем сервис конфига */                 
+            $config = new Config($this->mainConfigPath, $this->getEnv());
             
             /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->get('services'));
+            $this->ServiceContainer->addService('config', $config);
             
             $sessionStorage = $this->ServiceContainer->get('session_storage')->start();            
             
             /* Инициализируем файрволл */
-            $firewall = new Firewall($sessionStorage, $config->get('firewall'));
+            $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
             $this->ServiceContainer->addService('firewall', $firewall);                                                            
             
             //$logger = $this->getService('logger');
@@ -322,14 +318,27 @@ class App {
      */
     private function runHttpApplication()
     {        
-        $router = Router::createFromGlobals()
-            ->withBundlesPath($this->bundlesPath)
-            ->withConfig($this->getService('config'))
-            ->withFirewall($this->getService('firewall'));
-        $this->ServiceContainer->addService('router', $router);
-            
+        $responce = $this->initRouter(Router::createFromGlobals())               
+        ->sendRequest();
+        
+        var_dump($responce);
     }
     
+    /**
+     * 
+     * @param Router $router
+     * @return Router
+     */
+    private function initRouter(Router $router)
+    {
+        
+        $router
+        ->withBundlesPath($this->bundlesPath)
+        ->withFirewall($this->getService('firewall'))
+        ->withConfig($this->getService('config'));
+        
+        return $router;
+    }
     private function buildTmpRequestVars()
     {
         $request = self::getTmp('request');
@@ -618,17 +627,17 @@ class App {
 	
 	public static function getSelfLink()
 	{
-		$app = self::o();
-		$router = $app->getService('router');
-		return self::makeUrl(strtolower($router->getController()), strtolower($router->getAction()));
+            $app = self::o();
+            $router = $app->getService('router');
+            return self::makeUrl(strtolower($router->getController()), strtolower($router->getAction()));
 	}
 	
 	public function printConsole($str)
 	{
-		if(!$str){
-			return;
-		}
-		$json = addslashes(json_encode($str));
-		echo "<script>console.log(JSON.parse('".$json."'))</script>";
+            if(!$str){
+                    return;
+            }
+            $json = addslashes(json_encode($str));
+            echo "<script>console.log(JSON.parse('".$json."'))</script>";
 	}
 }

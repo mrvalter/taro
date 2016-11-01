@@ -26,13 +26,16 @@ class Config {
      * @param string $pathToMainConfigDir  Папка с основным конфигом
      */
     public function __construct($pathToMainConfigDir, $enviroment='')
-    {
-        
+    {        
         $this->enviroment = $enviroment;   
         $this->config = array_replace_recursive(
             $this->getArrayFromFile($pathToMainConfigDir.'/config.php', true),
-            $this->getArrayFromFile($pathToMainConfigDir.'/config_'.$this->enviroment.'.php', false)
-        );                        
+            $this->getArrayFromFile($pathToMainConfigDir.'/config_'.$this->enviroment.'.php', false)            
+        );
+                        
+        $this->config['firewall'] = $this->getArrayFromFile($pathToMainConfigDir.'/firewall.php', true);
+        
+        $this->tags = [];
     }
     
     /**
@@ -67,18 +70,19 @@ class Config {
      */	
     public function getArrayFromFile($file, $required=true)
     {
-            if(file_exists($file)){
-                    $array = include $file;
-                    if(!is_array($array)){
-                            $array = [];
-                    }
-            }elseif($required){
-                    throw new \FileNotFoundException('Не найден файл конфигурации '.$file);
-            }else{
+        
+        if(file_exists($file)){
+            $array = include $file;
+            if(!is_array($array)){
                     $array = [];
             }
+        }elseif($required){
+                throw new \FileNotFoundException('Не найден файл конфигурации '.$file);
+        }else{
+                $array = [];
+        }
 
-            return $array;
+        return $array;
     }	
 	
     /**
@@ -117,7 +121,7 @@ class Config {
     {
         
         $config = [];
-        if(isset($this->configFiles[0])){                   				
+        if(isset($this->configFiles[0])){                  
             foreach($this->configFiles as $file){
 
                 $path = $file['path'];

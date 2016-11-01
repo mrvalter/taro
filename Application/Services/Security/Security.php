@@ -2,6 +2,7 @@
 
 namespace Services\Security;
 use Services\Security\Authentication\AuthenticationManager;
+use Services\Security\Interfaces\AuthenticatorInterface;
 use Services\Security\Csrf\CsrfManager;
 
 use Services\Security\Interfaces\SessionStorageInterface;
@@ -26,23 +27,21 @@ class Security {
     private $user;
     
     public function __construct(        
-        AuthenticationManager $authenticationManager, 
-        CsrfManager $csrfManager,      
+        AuthenticatorInterface $authenticator,              
         UserRepositoryInterface $userRepository,
         SessionStorageInterface $sessionStorage
     ) {
                 
-        $this->authenticationManager = $authenticationManager;
-        $this->csrfManager = $csrfManager;
+        $this->authenticationManager = new AuthenticationManager ($authenticator, $sessionStorage);
+        $this->csrfManager = new CsrfManager();
         $this->userRepository = $userRepository;
-        $this->sessionStorage = $sessionStorage;
+        $this->sessionStorage = $sessionStorage->start();
         $this->user = null;
     }
     
     public function authorize()
     {
-        
-        $this->sessionStorage->start();
+                
         if(!$this->sessionStorage->isAuthorized()){
             return false;
         }

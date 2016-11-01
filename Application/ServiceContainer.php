@@ -61,7 +61,10 @@ class ServiceContainer {
      */
     private function initService($name, &$services=array())
     {      
-				
+		
+        if($name == 'config'){
+            var_dump($this->services);
+        }
         if(isset($this->services[$name])){
             return $this->services[$name];
         }
@@ -82,7 +85,7 @@ class ServiceContainer {
         $params = isset($this->config[$name]['params']) ? $this->config[$name]['params'] : array();
         
 		if(!$class){
-			throw new \ServiceException('Не найден сервис "'.$name.'" в конфиге приложения');
+                    throw new \ServiceException('Не найден сервис "'.$name.'" в конфиге приложения');
 		}
 		
         if(!sizeof($params)){

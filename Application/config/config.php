@@ -8,19 +8,20 @@
 
 return array(    	
 	
-	'media_path'        => '/%bundle%/Application/src/%bundle%/media',  /* Путь к папке медиа проекта */
-	'global_media_path' => '/%bundle%/Application/src/%public%/media',  /* Путь к глобальной папке медиа */
-	'cache_dir'         => '/MatMedV2_cache',	
-	
-	'user_image_path'   => [
-            'moscow' => '/mnt/E-Office/usersphoto/Moscow',
-            'chel'   => '/mnt/E-Office/usersphoto/Chel',
-	],
+    'media_path'        => '/%bundle%/Application/src/%bundle%/media',  /* Путь к папке медиа проекта */
+    'global_media_path' => '/%bundle%/Application/src/%public%/media',  /* Путь к глобальной папке медиа */
+    'cache_dir'         => '/MatMedV2_cache',	
+
+    'user_image_path'   => [
+        'moscow' => '/mnt/E-Office/usersphoto/Moscow',
+        'chel'   => '/mnt/E-Office/usersphoto/Chel',
+    ],
     
     'admin_mails' => [
         'fedyakinas@master'
     ],
-		
+
+    
     /** 
      * Сервисы 
      * Конфигурационный сервис config, зарезервирован по умолчанию
@@ -48,7 +49,17 @@ return array(
         
         'session_storage'=>[
             'class' =>'Services\Security\SessionStorage\NativeSessionStorage',
-        ],               
+        ], 
+        
+        'security' => [
+            'class' =>'Services\Security\Security',
+            'params'=>[
+                'authenticator'  => '@authenticator',
+                'userRepository' => '@user_repository',
+                'sessionStorage' => '@session_storage',
+                
+            ]
+        ],
         
         'db'=>[
             'class'=> 'Services\DB',

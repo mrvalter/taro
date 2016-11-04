@@ -2,8 +2,6 @@
 
 /** 
  * @autor Fedyakin Alexander
- * @copyright (c) 2015, Materia Medica Group
- * @package Services\DB
  */
 
 use Composer\Autoload\ClassLoader as ClassLoader;

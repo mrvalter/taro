@@ -308,152 +308,16 @@ class App {
         $View->setLayoutPath($this->appPath.'/'.'layouts');
         return $View;
         
-    }
-    /**
-     * Запускает Контроллер
-     * @param Router $Router
-     * @return \Services\View
-	 * 
-     * @throws \FileNotFoundException
-     * @throws \RouteException
-     */
-    private function runController(Router $Router, $params=[], MenuItem $rights=null)
-    {	
-        if($Router->isEmpty()){
-                return new View();
-        }
-
-        $security = $this->getService('security');
-
-        /* строим меню */									
-        $bundle          = $Router->getBundle();
-        $controller      = $Router->getController();
-        $controllerClass = $bundle==self::PUBLIC_BUNDLE ? 'MatMedV2_Public\\Controllers\\'.$controller.'Controller' : $controller.'Controller';
-        $actionName      = $Router->getAction();	
-
-
-
-        $View = $this->getDefaultView();
-
-        $View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));	
-
-        if(!class_exists($controllerClass) || (!method_exists($controllerClass, $actionName.'Widget') &&  !method_exists($controllerClass, $actionName.'Action'))){
-                $controllerClass = 'MatMedV2_Public\\Controllers\\'.$controllerClass;
-                $View->addTemplatePath($this->bundlesPath."/".self::PUBLIC_BUNDLE."/views/".$Router->getController(false));	
-        }else{
-                $View->addTemplatePath($this->bundlesPath."/$bundle/views/".$Router->getController(false));
-        }
-		
-        //var_dump($controllerClass);
-        			
-        $refController = new ReflectionClass( $controllerClass );
-		
-        
-		switch (true){			
-			case $refController->isSubclassOf('\Classes\Widget'):
-				$action = $actionName.'Widget';				
-				/*if(!$refController->hasMethod($action)){					
-					return $this->runController($Router->setEmpty());
-				}*/
-				break;
-			
-			case $refController->isSubclassOf('\Classes\Controller'):
-				$action = $actionName.'Action';								
-				break;
-			
-			default:
-				throw new ControllerException("Контроллер должен наследовать класс \Classes\Controller ($bundle)");
-		}				
-		
-						
-		
-		if(null === $rights){
-			/* Проверяем доступ к контроллеру на чтение */		
-			if(!$refController->isSubclassOf('\Classes\PublicController')){                
-				$rights = $security->checkAccess($Router);                
-				if(!$rights){
-					throw new EccessDeniedException('Доступ к запрашиваему ресурсу запрещен');		
-				}
-			}
-		}
-			
-		
-		if(null === $rights){
-			$rights = new MenuItem();
-		}
-		
-		if(!$refController->hasMethod($action)){		
-			throw new ControllerException("Не найден метод \"$action\" контроллера \"$controllerClass\" ($bundle) ");            
-		}
-		
-        $refMethod = $refController->getMethod($action);
-		if(!$refMethod->isPublic()){
-			throw new ControllerException("метод '$action' контроллера '$controllerClass' должен быть публичным ($bundle)");
-		}
-		
-        $refParams  = $refMethod->getParameters();		
-        $actionParams = array();
-        
-		$paramsUrl = $Router->getParamsFromUrl();	
-		$paramsRequest = $_REQUEST;
-			
-		
-		if(count($paramsUrl)>count($refParams)){
-			$Router = new Router();
-			$Router->setNotFound();
-			return $this->runController($Router);
-		}
-		
-        if(sizeof($refParams)){			
-			for($x=0; $x<count($refParams); $x++){
-				
-				if($refParams[$x]->isDefaultValueAvailable()){					
-					$actionParams[$x] = $refParams[$x]->getDefaultValue();
-				}else{
-					$actionParams[$x] = null;
-				}		
-				
-				if(isset($paramsRequest[$refParams[$x]->name])){
-					$actionParams[$x] = $paramsRequest[$refParams[$x]->name];
-				}
-				
-				if(isset($paramsUrl[$x])){
-					$actionParams[$x] = $paramsUrl[$x];
-				}
-				
-				if(isset($params[$refParams[$x]->name])){
-					$actionParams[$x] = $params[$refParams[$x]->name];
-				}
-				 
-			}			
-        }                                    	
-		
-							
-						
-		$o_controller = new $controllerClass($View);
-						
-		$o_controller->setRights($rights);		        
-		$o_controller->_setServiceContainer($this->ServiceContainer);        				
-        		
-		/*var_dump($actionParams);
-		var_dump($paramsRequest);
-		die();*/
-		$resView = call_user_func_array(array($o_controller, $action), $actionParams);
-					
-		if(!$resView instanceof ViewInterface){
-			throw new ResponceFalseException("Контроллер должен возвращать ViewInterface объект ($controllerClass , $action)");
-		}
-		
-        return $resView;
     }    
 	
-	public function mooveSessionUnreadToTmp()
-	{
-		if(isset($_SESSION['_SYSTEM']['unread'])){
-			$_SESSION['_SYSTEM']['tmp'] = $_SESSION['_SYSTEM']['unread'];
-			unset($_SESSION['_SYSTEM']['unread']);
-		}
-	}
+    public function mooveSessionUnreadToTmp()
+    {
+            if(isset($_SESSION['_SYSTEM']['unread'])){
+                    $_SESSION['_SYSTEM']['tmp'] = $_SESSION['_SYSTEM']['unread'];
+                    unset($_SESSION['_SYSTEM']['unread']);
+            }
+    }
+    
     public function unsetSessionTmp()
     {		
         if(isset($_SESSION['_SYSTEM']['tmp'])){
@@ -534,13 +398,13 @@ class App {
         return isset($_SESSION['_SYSTEM']['tmp']['DATA'][$key]) ? $_SESSION['_SYSTEM']['tmp']['DATA'][$key] : '';
     }
     
-	public static function getNotFoundView(){
-		$app = self::o();
-		$Router = $app->getService('router');
-		$Router->setNotFound();		
-		return $app->runController($Router);
-		
-	}
+    public static function getNotFoundView(){
+            $app = self::o();
+            $Router = $app->getService('router');
+            $Router->setNotFound();		
+            return $app->runController($Router);
+
+    }
 	
     public static function insert($controller, $action, $params=[], MenuItem $right=null)
     {

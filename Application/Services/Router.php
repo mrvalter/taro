@@ -83,8 +83,9 @@ class Router {
             if(!$this->bundle){
                 $this->response = $this->createNotFoundResponse('Can\'t find Bundle');
             }
+            
             $this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
-            $this->action     = isset($pathArr[1])? strtolower($pathArr[1]) : self::defaultActionName;
+            $this->action     = isset($pathArr[2])? strtolower($pathArr[2]) : self::defaultActionName;
         }
         
         $this->params = [];        
@@ -146,21 +147,7 @@ class Router {
         /* Если ответ уже готов, прерываем выполнение */
         if($this->response !== null){
             return $this->response;
-        }
-                        
-        $controller = $this->getController();
-        $action = $this->getAction();
-        
-        $firewall = $this->getFirewall();
-        
-        if(!$firewall->checkAccess($this->request)){
-            if(!$firewall->getSecurity()->isAuthorized()){
-                return $this->response = $this->createNeedAuthenticateResponse();
-            }else{
-                return $this->response = $this->createAccessDeniedResponse();
-            }
-            
-        }
+        }                
         
         $this->response = $this->runAction();
         
@@ -175,16 +162,38 @@ class Router {
         
         $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
         $method = $this->getAction().'Action';
+                
+        try {
+            $refController = new \ReflectionClass( $controllerClass );                        
+        }catch(\ReflectionException $e){
+            throw new \ControllerException("Не найден контроллер $controllerClass");            
+        }
+        
+        try {
+            $refMethod = $refController->getMethod($method);
+        }catch(\ReflectionException $e){
+            throw new \ControllerException("Не найден метод $method контроллера $controllerClass");
+        }
+        
+        /* Проверка прав доступа */
+        $firewall = $this->getFirewall();                       
+        if(!$firewall->checkAccess($this->request)){
+            if(!$firewall->getSecurity()->isAuthorized()){
+                return $this->response = $this->createNeedAuthenticateResponse();
+            }else{
+                return $this->response = $this->createAccessDeniedResponse();
+            }            
+        }        
+        /* --- Проверка прав доступа */
+        
         
         $rights = $this->getFirewall()->getSecurity()->getRights($this->request);
-        
-        $refController = new \ReflectionClass( $controllerClass );
-		        
+                		        
         if(!$refController->isSubclassOf('\Classes\Controller')){
             throw new \ControllerException("Контроллер должен наследовать класс Classes\Controller ($controllerClass) ");
         }                
         
-        $refMethod = $refController->getMethod($method);
+        
         $refParams  = $refMethod->getParameters();
         
         $queryParams = $this->request->getUri()->getQuery();

@@ -128,8 +128,9 @@ class Firewall implements FirewallInterface{
     public function getExceptionResponse(\Exception $exception)
     {                
         
-        var_dump($exception);
-        die();
+        var_dump($exception->getMessage());
+        return new Response(503);
+        
         if(in_array($this->errorReporting, [E_ALL, E_ERROR] )){
 			
         }

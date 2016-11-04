@@ -40,8 +40,7 @@ class App {
     /** @var string окончания девовского енвиромента, когда показываются ошибки */
     const ENVIROMENT_DEV_POSTFIX = 'dev';
     
-    private static $_instance = null;        
-    private static $startTime=0;
+    private static $_instance = null;    
     private static $widgets=array();
    
     
@@ -180,10 +179,7 @@ class App {
         $this->httpPath = $httpPath;
         return $this;
     }            
-    
-    
-    
-    
+                
     /**
      * Стартует приложение
      * 
@@ -195,7 +191,7 @@ class App {
             return false;
 		
 
-        self::$startTime = microtime(true);
+        $startTime = microtime(true);
         
         if(self::$_instance !== null)
             return false;                
@@ -213,8 +209,11 @@ class App {
         }catch (\Exception $e){
             $responce =$App->getService('firewall')->getExceptionResponse($e);
         }
-		
+	
+        $time = microtime(true) - $startTime;
+        printf('Скрипт выполнялся %.4F сек.', $time);
         var_dump($responce);
+        
         exit();
     }
     
@@ -279,11 +278,7 @@ class App {
      */
     private function runHttpApplication()
     {                
-        $responce = Router::createFromGlobals()               
-        ->sendRequest();
-        
-        var_dump($responce);
-
+        return Router::createFromGlobals()->sendRequest();
     }
         
     private function buildTmpRequestVars()

@@ -117,12 +117,12 @@ class Firewall implements FirewallInterface{
     public function setConfig(array $config=[])
     {
 
-            $this->config = $config;
-            $this->bundlesPath = $config['bundles_path'];
-            $this->requireBundles();
-            $this->setErrorReporting();
+        $this->config = $config;
+        $this->bundlesPath = $config['bundles_path'];
+        $this->requireBundles();
+        $this->setErrorReporting();
 
-            return $this;
+        return $this;
     }    		
 		
     public function getExceptionResponse(\Exception $exception)
@@ -147,19 +147,19 @@ class Firewall implements FirewallInterface{
 	
     public function setErrorReporting()
     {		
-            $errorH = isset($this->config['error_reporting'])? $this->config['error_reporting'] : 0;
-            if($errorH){
-                    ini_set('display_errors', TRUE);
-            }else{
-                    if($this->xdebugLoaded){
-                            xdebug_disable();
-                    }
-            }
+        $errorH = isset($this->config['error_reporting'])? $this->config['error_reporting'] : 0;
+        if($errorH){
+                ini_set('display_errors', TRUE);
+        }else{
+                if($this->xdebugLoaded){
+                        xdebug_disable();
+                }
+        }
 
-            error_reporting($errorH);
+        error_reporting($errorH);
 
-            $this->errorReporting = $errorH;
-            return $this;
+        $this->errorReporting = $errorH;
+        return $this;
     }
 
     /**

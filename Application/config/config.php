@@ -1,6 +1,8 @@
 <?php
 
 /**
+ *  синонимы, работают только на уровне контроллеров
+ * 
  *  %bundle% - имя бандла
  *  %public% - имя публичного бандла   
  *  %bundlePath% - путь от корня до Бандла
@@ -21,17 +23,16 @@ return array(
         'fedyakinas@master'
     ],
 
-    
     /** 
      * Сервисы 
      * Конфигурационный сервис config, зарезервирован по умолчанию
      * config class = Services\Config
      */
-    'services' => [
+    'services' => [        
+        'config'      => 'RESERVED', // сервис конфигурации 		
+        'router'      => 'RESERVED', // сервис роутинга/		
+        'autoloader'  => 'RESERVED', // сервис подгрузки классов		
         
-        'config'  => 'RESERVED',        
-        'router'  => 'RESERVED',
-        'menu'    => 'RESERVED',
 	
         'user_repository' => [
             'class' => 'Classes\\UserRepository'
@@ -46,10 +47,15 @@ return array(
             'class'  => 'Services\\Security\\Authentication\\LdapAuthenticator',
             'params' => ['@user_repository', '@ldap']
         ],*/
-        
-        'session_storage'=>[
+		
+        'session_storage' => [
             'class' =>'Services\Security\SessionStorage\NativeSessionStorage',
+
         ], 
+        
+        'menu' => [
+            'class' =>'Services\Menu',
+        ],
         
         'security' => [
             'class' =>'Services\Security\Security',

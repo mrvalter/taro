@@ -1,13 +1,13 @@
 <?php
 namespace Services;
 
+use Services\Interfaces\FirewallInterface;
 use Psr\Http\Message\RequestInterface;
 use Services\HttpFound\ServerRequest;
 use Services\HttpFound\Request;
 use Services\HttpFound\Response;
 use Services\HttpFound\Uri;
 use Services\Config;
-use Services\Firewall;
 
 
 /**
@@ -17,12 +17,16 @@ use Services\Firewall;
 class Router {                          
 	
     const defaultControllerName = 'Index';
-    const defaultActionName     = 'index';
-    const defaultBundleName     = 'MatMedV2_Public';
+    const defaultActionName     = 'index';    
     const controllerPostfix     = 'Controller';
     const bundlePostfix         = '_Bundle';
     const actionPostfix         = 'Action';
 	
+    /** @var FirewallInterface*/
+    private static $firewall = null;
+    
+    /** @var Config*/
+    private static $config = null;
     
     /** @var string */
     private $bundle;
@@ -31,28 +35,19 @@ class Router {
     private $controller;
     
     /** @var string */
-    private $action;
-    
-    /** @var string */
-    private $bundlesPath;
+    private $action;    
     
     /** @var string */
     private $realBundle;            
 
     /** @var array */
-    private $params;
-
-    /** @var Config */
-    private $config;
-    
-    /** @var Firewall */
-    private $firewall;
+    private $params; 
 	
     /** @var Request */
     private $request;
     
     /** @var Response */
-    private $response;
+    private $response = null;
     
     /** @var array */
     private $errors;
@@ -64,14 +59,30 @@ class Router {
     public function __construct(RequestInterface $request)
     {
         
+
+        if(null === $this->getFirewall()){
+            throw new \SystemErrorException('Firewall not initialized');
+        }
+        
         $this->request = $request;
-        $this->response = new Response();        
+        //$this->response = new Response();        
 
         if(null !== $request) {
             $uri = $request->getUri();				               				
-            $this->checkUri($uri);									
-            $pathArr = explode('/', substr($uri->getPath(), 1));		
-            $this->bundle     = isset($pathArr[0])? $pathArr[0] : self::defaultBundleName;
+            $this->checkUri($uri);
+            $pathArr = [];
+            $path = substr($uri->getPath(), 1);
+            if(trim($path)){
+                $pathArr = explode('/', $path);
+            }
+                                    
+            $this->bundle = isset($pathArr[0])?
+                $this->getFirewall()->getBundleByName($pathArr[0]) : 
+                $this->getFirewall()->getMainPageBundle();
+            
+            if(!$this->bundle){
+                $this->response = $this->createNotFoundResponse('Can\'t find Bundle');
+            }
             $this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
             $this->action     = isset($pathArr[1])? strtolower($pathArr[1]) : self::defaultActionName;
         }
@@ -85,6 +96,15 @@ class Router {
         
     }                   
 	
+    /**
+     * 
+     * @return Firewall
+     */
+    public function getFirewall()
+    {
+            return self::$firewall;
+    }
+    
     /**
      * Получает ответ
      * @return \Services\HttpFound\Request
@@ -102,7 +122,7 @@ class Router {
     public function getConfig()
     {
         
-        return $this->config;
+        return self::$config;
     }
     
     /**
@@ -111,43 +131,36 @@ class Router {
      * @TODO CurlRequest
      */
     public function sendRequest()
-    {
+    {        
         
         $host = $this->request->getUri()->getHost();
         
         if($host === 'localhost' || $host === $_SERVER['HTTP_HOST']){
             return $this->handleRequest();
-        }
-        
+        }        
     }
     
     private function handleRequest()
     {
-        
+                
+        /* Если ответ уже готов, прерываем выполнение */
+        if($this->response !== null){
+            return $this->response;
+        }
+                        
         $controller = $this->getController();
         $action = $this->getAction();
-        $bundle = $this->getRealBundle();
-        $bundlesPath = $this->bundlesPath;
         
-        $classFile = "{$bundlesPath}/{$bundle}/Controllers/{$controller}Controller.php";
-               
-        if(!$bundle || !file_exists($classFile)){
-            throw new \FileNotFoundException("Не найден файл контроллера {$bundle}\\Controllers\\{$controller}Controller");
+        $firewall = $this->getFirewall();
+        
+        if(!$firewall->checkAccess($this->request)){
+            if(!$firewall->getSecurity()->isAuthorized()){
+                return $this->response = $this->createNeedAuthenticateResponse();
+            }else{
+                return $this->response = $this->createAccessDeniedResponse();
+            }
+            
         }
-        
-        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
-        $medthod = $action.'Action';
-        $refController = new \ReflectionClass( $controllerClass );
-        
-        
-        if(!$this->firewall->getSecurity()->authorize() && !$this->firewall->checkAccess($this->request)){
-           return $this->response = $this->createNeedAuthenticateResponse();            
-        }
-        
-        if(!$this->firewall->checkAccess($request)){
-            return $this->response = $this->createAccessDeniedResponse();            
-        }
-        
         
         $this->response = $this->runAction();
         
@@ -157,23 +170,21 @@ class Router {
     private function runAction()
     {
         
-        $controller = $this->getController();
-        $action = $this->getAction();
-        $bundle = $this->getRealBundle();
-        $bundlesPath = $this->bundlesPath;
+        $controller = $this->getController();        
+        $bundle = $this->getBundle();
         
         $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
-        $medthod = $action.'Action';
+        $method = $this->getAction().'Action';
         
-        $rights = $this->firewall->getSecurity()->getSubRights("$controller/$action");
+        $rights = $this->getFirewall()->getSecurity()->getRights($this->request);
         
-        $refController = new ReflectionClass( $controllerClass );
+        $refController = new \ReflectionClass( $controllerClass );
 		        
         if(!$refController->isSubclassOf('\Classes\Controller')){
-            throw new ControllerException("Контроллер должен наследовать класс \Classes\Controller ($bundle\\$controller) ");
+            throw new \ControllerException("Контроллер должен наследовать класс Classes\Controller ($controllerClass) ");
         }                
         
-        $refMethod = $refController->getMethod($action);                
+        $refMethod = $refController->getMethod($method);
         $refParams  = $refMethod->getParameters();
         
         $queryParams = $this->request->getUri()->getQuery();
@@ -182,8 +193,6 @@ class Router {
         var_dump($refParams);
         die('ddssd');
     }
-    
-    
     
     /**
      * @return Response
@@ -201,7 +210,12 @@ class Router {
         return new Response(403);
     }
     
-    public  function createNotFoundResponse()
+    /**
+     * 
+     * @param string $error Если стоит ошибка то в не в продакшее выводится ошибка
+     * @return Response
+     */
+    public  function createNotFoundResponse($error)
     {
         
         return new Response(404);
@@ -225,17 +239,7 @@ class Router {
     {
         
         return $this->bundle;
-    }                       
-    
-    /**
-     * Возвращает настоящее имя папки бандла
-     * @return string
-     */
-    public function getRealBundle()
-    {
-        
-        return $this->realBundle;
-    }
+    }                               
 	
     /**
      * Возвращает название контроллера без постфикса
@@ -255,32 +259,26 @@ class Router {
     {
         
         return $this->action;
-    }            				
-	
+    }            					                       
+
+    
     /**
      * 
-     * @param Config $config
      * @return \Services\Router
      */
-    public function withConfig(Config $config)
+    public function initConfig()
     {	
-        $bundlesPath = $this->bundlesPath;
-        $bundle = $this->getBundle();		
-        $realBundle = $this->findRealBundle($bundlesPath, $bundle);
-        if(null == $realBundle){
-            $this->response = $this->createNotFoundResponse();                    
-        }
-
+        
+        $bundleDir = $this->getFirewall()->getPathToBundleByname($this->bundle);
+        
         $config->addTags([
-            '%bundle%'     => $realBundle,
-            '%bundlePath%' => "$bundlesPath/$realBundle",
+            '%bundle%'     => $this->bundle,
+            '%bundlePath%' => $bundleDir,
             '%public%'     => self::defaultBundleName
-        ]);		
-
-
-        $this->realBundle = $realBundle;
-        $config->addFile("$bundlesPath/$realBundle", false);
-        $this->config = $config->make();
+        ]);
+      
+        $config->addDir($bundleDir, false);
+        $this->config = $config->makeTags();
 
         return $this;
     }
@@ -289,8 +287,7 @@ class Router {
     {
         $this->firewall = $firewall;
         return $this;
-    }
-	
+    }	
 	
     /**
      * 
@@ -306,23 +303,7 @@ class Router {
             $this->bundlesPath = $bundlesPath;
             return $this;
     }		
-
-    /**
-     * 
-     * @param string $bundlesPath
-     * @param string $bundle
-     * @return string|null
-     */
-    public function findRealBundle($bundlesPath, $bundle)
-    {		
-        $realBundle = $this->firewall->getRealBundleByName($bundle);
-        if(!$realBundle || !file_exists($bundlesPath.'/'.$realBundle)){
-            return null;
-        }
-        
-        return $realBundle;
-    }
-
+    
     /**
      * @TODO СДЕЛАТЬ РЕДИРЕКТ
      * @param type $controller
@@ -367,30 +348,14 @@ class Router {
         }
                 
         throw new \RouteException("Не найден путь для редиректа ($routeName)");
-    }  
-
-    /**
-     * @TODO Сделать 
-     * @return \Services\Router
-     */
-    public function setNotFound()
-    {          
-        header("HTTP/1.0 404 Not Found");	
-		if(strtolower($this->getController()) == 'api'){
-			die('nf');
-		}
-        $this->controller = 'Index';
-        $this->action = 'notfound';
-		//$this->bundle = self::$_publicBundle;
-        return $this;
-    }    	
+    }     
 	
     /**
      * @TODO Сделать 
      * 
      */
     public function redirectToMain() {
-        header('Location: '.$_SERVER['REQUEST_SCHEME'].'://'.$_SERVER['HTTP_HOST']);
+       header('Location: '.$_SERVER['REQUEST_SCHEME'].'://'.$_SERVER['HTTP_HOST']);
         die();
     }        	   		
 	
@@ -420,17 +385,19 @@ class Router {
      * @param Uri $uri
      * @return boolean
      */
-    public function checkUri(Uri $uri){
-            $path = $uri->getPath();
+    public function checkUri(Uri $uri)
+    {
+        $path = $uri->getPath();
 
-            if(substr($path, -1) =='/' && $path != "/" && preg_match('~^\/[^/]+\/$~',$path)) {
-        header('Location: '.$uri->getScheme().'://'.$uri->getHost().substr($path, 0, -1));
-        die();
-    }
+        if(substr($path, -1) =='/' && $path != "/" && preg_match('~^\/[^/]+\/$~',$path)) {
+                header('Location: '.$uri->getScheme().'://'.$uri->getHost().substr($path, 0, -1));
+                die();
+        }
 
-            return true;
-    }
-
+        return true;
+    }	   
+	
+	
     /**
      * 
      * @param string $uri
@@ -439,7 +406,7 @@ class Router {
      * @param string $version
      * @return \Services\Router
      */
-    static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
+    public static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
     {
             if(!preg_match('~^(https?:\/\/)?([\w\.]+)\.([a-z]{2,6}\.?)(\/[\w\.]*)*\/?$~', $uri, $result))
             {
@@ -459,6 +426,28 @@ class Router {
         $request = ServerRequest::fromGlobals();		
         return new Router($request);
     }	
+    
+    /**
+     * 
+     * @param FirewallInterface $firewall
+     */
+    public static function setFirewall(FirewallInterface $firewall)
+    {
+        if(self::$firewall === null){
+                self::$firewall = $firewall;
+        }
+    }
+    
+    /**
+     * 
+     * @param FirewallInterface $firewall
+     */
+    public static function setConfig(Config $config)
+    {
+        if(self::$config === null){
+                self::$config = $config;
+        }
+    }
 }
 
 

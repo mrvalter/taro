@@ -8,6 +8,6 @@
 /**
  * Класс исключения в объекте конфигурации \Services\Config
  */
-class ConfigException extends AppException{
+class ConfigException extends SystemErrorException{
     
 }

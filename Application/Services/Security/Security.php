@@ -24,7 +24,7 @@ class Security {
     private $csrfManager;
     private $sessionStorage;
     private $userRepository;
-    private $user;
+    private $user;    
     
     public function __construct(        
         AuthenticatorInterface $authenticator,              
@@ -60,13 +60,14 @@ class Security {
         return true;
     }
     
-    /**
-     * 
-     * @param string $path
-     */
-    public function getSubRightsForPath($path)
+    public function isAuthorized()
     {
-        
-    }
+        return $this->user !== null;
+    }   
     
+    
+    public function getRights(RequestInterface $request)
+    {
+        return [];
+    }
 }

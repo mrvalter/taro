@@ -79,6 +79,7 @@ class App {
         $this->bundlesPath    = __DIR__.'/'.self::BUNDLES_PATH;
         $this->layoutsPath    = __DIR__.'/'.self::LAYOUTS_PATH;
         $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;                
+	
     }
     
     /**
@@ -143,35 +144,7 @@ class App {
         $this->classLoader = $loader;     
         return $this;
     }
-    
-    /**
-     * Устанавливает способ отображения ошибок
-     * @param int $errorH (E_ALL, E_ERROR)
-     * @return \App
-     */            
-    public function setErrorHandler($errorH = null)
-    {                
-                
-        if($errorH !== null){
-            error_reporting($errorH);
-            ini_set('error_reporting', $errorH);
-            return $this;
-        }
-        		
-        ini_set('display_errors', TRUE);
-        ini_set('display_startup_errors', TRUE);
         
-        
-        
-        if(substr($this->env, -3) === self::ENVIROMENT_DEV_POSTFIX){
-            error_reporting(E_ALL);
-        }else{                        
-            error_reporting(E_ERROR);
-        }  
-				
-        return $this;
-    }
-    
     /**
      * Возвращает объект сервиса, сохраняя его в хранилище сервисов
      * 
@@ -220,7 +193,10 @@ class App {
      */
     public static function run($httpPath, ClassLoader $loader)
     {
+        if(self::$_instance!=null)
+            return false;
 		
+
         self::$startTime = microtime(true);
         
         if(self::$_instance !== null)
@@ -229,16 +205,32 @@ class App {
         self::$_instance = $App = new App();	
         
         $App->setEnv(getenv('APP_ENV'))
-            ->setErrorHandler()
+            //->setErrorHandler()
             ->setHttpPath($httpPath)                  
             ->setClassLoader($loader)            
-            ->initApplication()
-            ->runHttpApplication();
+            ->initApplication();            
 		
+        try {
+            $responce = $App->runHttpApplication();
+        }catch (\Exception $e){
+            $responce =$App->getService('firewall')->getExceptionResponse($e);
+        }
+		
+        var_dump($responce);
         exit();
     }
     
-    
+	/** 
+	 * Запускает приложение в редиме консоли
+	 */
+    public function runC()
+    {
+        $App = self::$_instance = new App(); 
+        $App->setEnv('console')
+            //->setErrorHandler()                            
+            ->setClassLoader($loader)
+            ->initApplication();            
+    }
     
     
     /**
@@ -257,88 +249,45 @@ class App {
             $this->ServiceContainer = new ServiceContainer();
             
             /* Инициализируем сервис конфига */                 
-            $config = new Config($this->mainConfigPath, $this->getEnv());
+            $config = new Config($this->getEnv());
+            $config->addDir($this->mainConfigPath, ['config'])
+                    ->addFile($this->mainConfigPath.'/firewall.php', 'firewall', true);
             
             /* Подгружаем сервисы */
-            $this->ServiceContainer = new ServiceContainer($config->get('services'));
+            $this->ServiceContainer = new ServiceContainer($config->getValue('services'));
             $this->ServiceContainer->addService('config', $config);
             
             $sessionStorage = $this->ServiceContainer->get('session_storage')->start();            
-            
+
             /* Инициализируем файрволл */
             $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
-            $this->ServiceContainer->addService('firewall', $firewall);                                                            
+            $this->ServiceContainer->addService('firewall', $firewall); 
             
-            //$logger = $this->getService('logger');
-                        
+            Router::setFirewall($firewall);
+            Router::setConfig($config);
 
-        }catch(AppException $e){
+        }catch(\Exception $e){            
                 echo 'Системная ошибка !<br />';			
-                $e->showTable();
+                echo $e->getMessage().'<br />';
+                $e->getTraceAsString().'<br />';
                 die();
         }		
 		
-        return $this;
-		
-        //try{                        
-		
-            /* Отправляем Запрос */            
-            $router->sendRequest();                        
-            
-            /* Получаем ответ */
-            $response = $router->getResponse();
-            
-            var_dump($response);
-            die('');
-                                   		            
-            $garbage = ob_get_clean();			            
-			
-            Logger::pushSystem($router->getBundle()." : ".$router->getController()." : ".$router->getAction());
-            Logger::pushSystem(sprintf('Скрипт выполнялся %.4F сек.', microtime(true) - self::$startTime));
-            Logger::pushSystem("Время работы с ДБ: ".Logger::getDbTime());
-            Logger::pushSystem("Память: ".((int)(memory_get_usage(false)/1024)).' KB');
-            Logger::pushSystem("Пиковая память: ".((int)(memory_get_peak_usage(false)/1024)).' KB');
-			
-			
-            if(!$router->getRequest()->isAjax() && $this->env == self::ENV_DEVELOPMENT){
-                    if($garbage){
-                            echo '<div style="clear:both">'.$garbage.'</div>';
-                    }				
-                    $log = Logger::getLog();
-                    if(!empty($log)){
-                            $this->printConsole($log);
-                    }
-            }						
-                 
-        exit();
+        return $this;		       
     }
     
     /**
      * Запуск контроллера
      */
     private function runHttpApplication()
-    {        
-        $responce = $this->initRouter(Router::createFromGlobals())               
+    {                
+        $responce = Router::createFromGlobals()               
         ->sendRequest();
         
         var_dump($responce);
+
     }
-    
-    /**
-     * 
-     * @param Router $router
-     * @return Router
-     */
-    private function initRouter(Router $router)
-    {
         
-        $router
-        ->withBundlesPath($this->bundlesPath)
-        ->withFirewall($this->getService('firewall'))
-        ->withConfig($this->getService('config'));
-        
-        return $router;
-    }
     private function buildTmpRequestVars()
     {
         $request = self::getTmp('request');

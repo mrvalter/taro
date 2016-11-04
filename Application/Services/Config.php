@@ -9,6 +9,8 @@ namespace Services;
  * Класс конфигурации приложения
  */
 class Config {                       
+        
+    const CONFIG_EXTENSION = 'php';
     
     /** @var array*/
     private $config;                
@@ -17,74 +19,74 @@ class Config {
     private $tags;    	
 
     /** @var string */
-    private $enviroment;
-
+    private $enviroment;            
 
     /**
      * 
      * @param string $enviroment           Переменная окружения (prod | dev | ...)
      * @param string $pathToMainConfigDir  Папка с основным конфигом
      */
-    public function __construct($pathToMainConfigDir, $enviroment='')
+    public function __construct($enviroment='', array $array=[])
     {        
-        $this->enviroment = $enviroment;   
-        $this->config = array_replace_recursive(
-            $this->getArrayFromFile($pathToMainConfigDir.'/config.php', true),
-            $this->getArrayFromFile($pathToMainConfigDir.'/config_'.$this->enviroment.'.php', false)            
-        );
-                        
-        $this->config['firewall'] = $this->getArrayFromFile($pathToMainConfigDir.'/firewall.php', true);
+        $this->enviroment = $enviroment;
+        $this->tags = [
+            '<?php' => '',
+            '<?'    => '',            
+            '?>'    => '',
+        ];
         
-        $this->tags = [];
+        $this->config = $array;
     }
     
     /**
-     * Возвращает конфигурацию по ключу
+     * Возвращает объект конфига построенным снужным ключом (клон)
      * @param string $conf Ключ массива конфигурации
-     * @return mixed 
+     * @return Config
      */			
-    public function get($conf='')
-    { 		
+    public function get(string $conf='')
+    { 	
         if($conf){
-            return isset($this->config[$conf])?$this->config[$conf] : array();
+            $configArr = isset($this->config[$conf])? [$conf => $this->config[$conf]] : [];
         }else{
-            return $this->config;
+            return clone $this;
         }
+        
+        return new Config ($this->enviroment, $configArr);
     }
     
     /**
-     * 
+     * Возвращает значение по ключу или null если зачения нет
+     * @param ... ключи конфига
+     * @return mixed | null
+     */
+    public function getValue(...$keys)
+    {
+        
+        if(isset($keys[0])){
+            $return = $this->config;
+            foreach($keys as $key){
+                if(isset($return[$key])){
+                    $return = $return[$key];
+                }else{
+                    return null;
+                }
+            }            
+            return $return;
+        }
+        
+        return $this->config;
+    }
+    
+    
+    /**
+     *  Возвращает  теги для замены
      * @return array
      */
     public function getTags()
     {
         return $this->tags;
     }
-
-    /**
-     * 
-     * @param string $file
-     * @param boolean $required
-     * @return array
-     * @throws \FileNotFoundException
-     */	
-    public function getArrayFromFile($file, $required=true)
-    {
-        
-        if(file_exists($file)){
-            $array = include $file;
-            if(!is_array($array)){
-                    $array = [];
-            }
-        }elseif($required){
-                throw new \FileNotFoundException('Не найден файл конфигурации '.$file);
-        }else{
-                $array = [];
-        }
-
-        return $array;
-    }	
-	
+    
     /**
      * Добавляет конфиг по имени файла или имени папки с конфигами
      * @param string $file Путь до файла
@@ -94,11 +96,60 @@ class Config {
      * @return \Services\Config
      */
 	
-    public function addFile($file, $required=true)
+    public function addFile($file, $key='', bool $required=true)
     {	
         
-        $this->configFiles[] = ['path'=>$file, 'required'=>$required];
+        $fileExist = file_exists($file);
+        $config = [];            
+
+        if(!$fileExist && $required){
+            throw new \ConfigException('Не найден файл конфига '.$fileName, $file);
+        }                
+        
+        if($key && !isset($this->config[$key])){
+            $this->config[$key] = [];
+        }                        
+        
+        if($fileExist){
+            if($key){
+                $exConfig = &$this->config[$key];
+            }else{
+                $exConfig = &$this->config;
+            }
+            
+            $configStr = file_get_contents($file);            
+            $config = eval($this->replaceTags($configStr));            
+                          
+            $exConfig = array_replace_recursive(
+                $exConfig,
+                $config
+            );            
+        }
+        
+        return $this;
+        
     }                     				    		
+    
+    
+    public function addDir($path, array $requiredNames=[])
+    {
+        if(!file_exists($path)){
+            throw new \ConfigException('config\'s dir path not found', 'dir path: '.$path);
+        }
+        
+        $files = [
+            'config',
+            'config_'.$this->enviroment
+        ];
+        
+        foreach($files as $fileName){
+            $file = $path.'/'.$fileName.'.'.self::CONFIG_EXTENSION;
+            $this->addFile($file, '', in_array($fileName, $requiredNames));
+        }
+        
+        return $this;
+        
+    }
     
     /**
      * 
@@ -109,92 +160,23 @@ class Config {
     {
             $this->tags = array_merge($this->tags, $tags);
             return $this;
-    }	
-
-    /**
-     * 
-     * @return \Services\Config
-     * @throws \ConfigException
-     * @throws \FileNotFoundException
-     */
-    public function make()
-    {
-        
-        $config = [];
-        if(isset($this->configFiles[0])){                  
-            foreach($this->configFiles as $file){
-
-                $path = $file['path'];
-                $splFile = new \SplFileInfo($path);
-
-                if(!$splFile->isReadable()){
-                    if($file['required']){
-                        throw new \FileNotFoundException('Не найден путь до конфига '.$path);
-                    }
-                    continue;
-                }
-
-
-                if($splFile->isDir()){
-                    $config = array_replace_recursive(
-                        $config,
-                        $this->getArrayFromFile($path.'/config_prod.php', $file['required']),
-                        $this->getArrayFromFile($path.'/config_'.$this->enviroment.'.php', false)
-                    );                                                
-
-                }else{
-                    $config = array_replace_recursive(
-                    $config,
-                    $this->getArrayFromFile($path, $file['required'])
-                    );
-                }
-            }
-
-            /* Секюрный конфиг переписывает все предыдущее с одинаковыми ключами */
-            foreach($this->configFiles as $file){
-
-                $path = $file['path'];
-                $splFile = new \SplFileInfo($path);           
-
-                if($splFile->isDir()){
-                    $securityArr = $this->getArrayFromFile($path.'/security.php', $file['required']);                
-                    if(!empty($securityArr)){
-                        $config['services'] = array_merge($config['services'], $securityArr['services']);
-                    }                
-                }
-            }
-        
-        }
-        
-        $this->config = $this->replaceTags($config);
-        $this->config['_tags'] = $this->getTags();
-
-        return $this;
-    }		
+    }	   
 
     /**
      * 
      * @param type $config
      * @return \Services\Config
      */
-    private function replaceTags(&$config)
+    private function replaceTags(&$configStr)
     {		            		
         if(!sizeof($this->tags)){
-                return $this;
+            return $configStr;
         }
+        
+        $keys = array_keys($this->tags);        
+        $values = array_values($this->tags);
 
-
-        foreach($config as &$value){
-            if(is_array($value)){
-                $this->replaceTags($value);
-            }else{				
-                $sinonims = array_keys($this->tags);				
-                $replaces = array_values($this->tags);
-                $value = str_replace($sinonims, $replaces, $value);
-            }
-        }
-
-        return $config;
+        return str_replace($keys, $values, $configStr);                
     }
 	
 }

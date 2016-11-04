@@ -7,6 +7,4 @@ $loader->add('Classes\\', __DIR__);
 $loader->add('Interfaces\\', __DIR__);
 $loader->add('', __DIR__.'/Exceptions');
 
-
-
 return $loader;

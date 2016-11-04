@@ -84,9 +84,10 @@ class NativeSessionStorage implements SessionStorageInterface{
     public function start()
     {
         if (PHP_SESSION_NONE === session_status()) {
-            session_start();
+            session_start();			
         }
         
+		$this->session_id = session_id();
         $this->sessionStarted = true;
         
         return $this;

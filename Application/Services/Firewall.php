@@ -1,15 +1,19 @@
 <?php
 namespace Services;
-
-use Services\Config;
-use Services\Security\Security;
-use Psr\Http\Message\RequestInterface;
+use Services\Interfaces\FirewallInterface;
+use Services\Security\Interfaces\SessionStorageInterface;
+use Services\Security\Interfaces\UserRepositoryInterface;
+use Services\Security\Interfaces\AuthenticatorInterface;
 use Services\Security\Authentication\AuthenticationManager;
 use Services\Security\Csrf\CsrfManager;
-use Services\Security\Interfaces\SessionStorageInterface;
-use Services\Router;
+use Services\Security\Security;
 use Services\HttpFound\Response;
+use Services\Config;
+use Services\Router;
 
+use Composer\Autoload\ClassLoader;
+
+use Psr\Http\Message\RequestInterface;
 
 
 /**
@@ -26,14 +30,19 @@ use Services\HttpFound\Response;
  * модифицирует исходящие данные если это требуется.
  * Пункт в конфиге - security
  */
-class Firewall {
-    
-    
-    /** @var array */
-    private $config;
-    
+class Firewall implements FirewallInterface{
+          
     /** @var array */
     private $requireBundles;
+    
+    /** @var array*/
+    private $publicUrls;
+    
+    /** @var string */
+    private $mainPageBundle;
+    
+    /** @var string*/
+    private $bundlesPath;
     
     /** @var Security */
     private $security;    
@@ -45,20 +54,38 @@ class Firewall {
      * @param Security $security
      * @param array $config
      */
-    public function __construct(Security $security, $config=[], $classLoader, $bundlesPath)
+    public function __construct(Security $security, Config $config, $classLoader, $bundlesPath)
     {
-        if(isset($config['required_bundles']) && sizeof($config['required_bundles'])){
-            foreach($config['required_bundles'] as $name=>$bundle){
+        if(!file_exists($bundlesPath)){
+            throw new \SystemErrorException('Path to Bundle\'s dir not found', 'bundlesPath: '.$bundlesPath);
+        }
+        
+        $requiredbundles = $config->getValue('firewall', 'required_bundles');
+        
+        if(null !== $requiredbundles && sizeof($requiredbundles)){
+            foreach($requiredbundles as $name=>$bundle){
+                $bundle = trim($bundle);
+                $name = trim($name);
+                if(!$bundle || !$name){
+                    throw new \ConfigException('Requires Bundles has emprty rows');
+                }
                 $this->requireBundles[strtolower($name)] = $bundle;
-                $classLoader->add('Swar_Bundle\\', $bundlesPath);
+                $classLoader->add($bundle, $bundlesPath);
             }
         }
                 
-        $this->config = $config;        
+        $this->publicUrls = $config->getValue('firewall', 'public_urls');
+                
+        $mainPageBundle       = $config->getValue('firewall', 'main_page_bundle');
+
+        $this->mainPageBundle = $mainPageBundle && isset($this->requireBundles[strtolower($mainPageBundle)])?
+            $this->requireBundles[strtolower($mainPageBundle)] :
+            null;
+        
         $this->security = $security;
-        $this->xdebugLoaded = extension_loaded('xdebug');        
+        $this->bundlesPath = $bundlesPath;
+        $this->xdebugLoaded = extension_loaded('xdebug');     
     }        
-    
     
     /**
      * 
@@ -68,32 +95,116 @@ class Firewall {
     {
         return $this->security;
     }
-    
+	
     /**
      * 
-     * @param string $bundle
-     * @return string|false
-     * 
+     * @return string
      */
-    public function getRealBundleByName($bundle)
-    {        
-        $bundle = strtolower($bundle);
-        if(isset($this->requireBundles[$bundle])){
-            return $this->requireBundles[$bundle];
-        }
-        
-        return false;
+    public function getBundlesPath()
+    {
+        return $this->bundlesPath;
+    }
+
+    /**
+     * 
+     * @return string|null
+     */
+    public function getMainPageBundle()
+    {
+        return $this->mainPageBundle;
     }
     
+    public function setConfig(array $config=[])
+    {
+
+            $this->config = $config;
+            $this->bundlesPath = $config['bundles_path'];
+            $this->requireBundles();
+            $this->setErrorReporting();
+
+            return $this;
+    }    		
+		
+    public function getExceptionResponse(\Exception $exception)
+    {                
+        
+        var_dump($exception);
+        die();
+        if(in_array($this->errorReporting, [E_ALL, E_ERROR] )){
+			
+        }
+		
+		
+        die('eee');
+        if($this->xdebugLoaded){
+            //xdebug_print_function_stack( $exception->getMessage() );
+        }else{
+            $response = new Response(404, [], $exception->getMessage());            
+        }
+        
+        return $response;        
+    }
+	
+    public function setErrorReporting()
+    {		
+            $errorH = isset($this->config['error_reporting'])? $this->config['error_reporting'] : 0;
+            if($errorH){
+                    ini_set('display_errors', TRUE);
+            }else{
+                    if($this->xdebugLoaded){
+                            xdebug_disable();
+                    }
+            }
+
+            error_reporting($errorH);
+
+            $this->errorReporting = $errorH;
+            return $this;
+    }
+
     /**
-     * 
+     * Ищет подключенный бандл по имени
+     * @param string $name
+     * @return string|false
+     */
+    public function getBundleByName($name)
+    {
+        $name = strtolower($name);
+        return isset($this->requireBundles[$name])? $this->requireBundles[$name] : null;
+    }    
+    
+    public function getPathToBundleByName($name)
+    {
+        if(null === $this->findBundleByName($name)){
+            return null;
+        }
+        
+        return $this->bundlesPath.'/'.$this->getBundleByName($name);
+    }            
+    
+    /**
+     * @TODO check Access by rights
      * @param Request $request
      * @return boolean
      */
     public function checkAccess(RequestInterface $request)
-    {                                
+    {   
+        $path = $request->getUri()->getPath();
+                 
+        /* Проверяем на публичный доступ */
+        if(isset($this->publicUrls[0])){                   
+            foreach($this->publicUrls as $pattern){
+                if(preg_match($pattern, $path)){
+                    return true;
+                }
+            }
+        }
+
+        if(!$this->getSecurity()->authorize()){
+            return false;
+        }
+
         
-        return false;
     }
     
     /**
@@ -118,8 +229,6 @@ class Firewall {
         }
         
         return $responce;        
-    }
-    
-    
+    }           
     
 }

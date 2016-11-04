@@ -69,7 +69,7 @@ class App {
     private $classLoader;
 	        
     /** @var \ServiceContainer Объект контейнера сервисов */
-    public $ServiceContainer = null;
+    private $ServiceContainer = null;
     
     
     private function __construct()

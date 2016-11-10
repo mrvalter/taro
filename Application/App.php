@@ -205,7 +205,7 @@ class App {
             ->initApplication();            
 		
         try {
-            $responce = $App->runHttpApplication();
+            $responce = $App->runHttpApplication();			
         }catch (\Exception $e){
             $responce =$App->getService('firewall')->getExceptionResponse($e);
         }
@@ -268,7 +268,10 @@ class App {
                 echo $e->getMessage().'<br />';
                 $e->getTraceAsString().'<br />';
                 die();
-        }		
+        }catch(\Throwable $e){
+			var_dump($e);
+			die();
+		}	
 		
         return $this;		       
     }

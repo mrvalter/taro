@@ -5,8 +5,8 @@ use Classes\Controller;
 
 class IndexController extends Controller{
     
-    public function indexAction()
+    public function indexAction(int $root, $id=null, $action='')
     {
         die('mainPageAction');
-    }
+    }		
 }

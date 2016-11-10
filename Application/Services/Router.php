@@ -4,7 +4,6 @@ namespace Services;
 use Services\Interfaces\FirewallInterface;
 use Psr\Http\Message\RequestInterface;
 use Services\HttpFound\ServerRequest;
-use Services\HttpFound\Request;
 use Services\HttpFound\Response;
 use Services\HttpFound\Uri;
 use Services\Config;
@@ -56,44 +55,36 @@ class Router {
      * 
      * @param RequestInterface $request
      */
-    public function __construct(RequestInterface $request)
+    private function __construct(RequestInterface $request)
     {
         
-
         if(null === $this->getFirewall()){
             throw new \SystemErrorException('Firewall not initialized');
         }
         
         $this->request = $request;
         //$this->response = new Response();        
-
-        if(null !== $request) {
-            $uri = $request->getUri();				               				
-            $this->checkUri($uri);
-            $pathArr = [];
-            $path = substr($uri->getPath(), 1);
-            if(trim($path)){
-                $pathArr = explode('/', $path);
-            }
-                                    
-            $this->bundle = isset($pathArr[0])?
-                $this->getFirewall()->getBundleByName($pathArr[0]) : 
-                $this->getFirewall()->getMainPageBundle();
-            
-            if(!$this->bundle){
-                $this->response = $this->createNotFoundResponse('Can\'t find Bundle');
-            }
-            
-            $this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
-            $this->action     = isset($pathArr[2])? strtolower($pathArr[2]) : self::defaultActionName;
-        }
         
-        $this->params = [];        
-        if(isset($pathArr[2])){
-            for($i=2;$i<count($pathArr); $i++){
-                $this->params[] = $pathArr[$i];
-            }
-        }
+		$uri = $request->getUri();
+		if(!$this->checkUri($uri)){
+			return;
+		}
+
+		$pathArr = $uri->getPathParts();
+		
+		$this->bundle = isset($pathArr[0])?
+			$this->getFirewall()->getBundleByName($pathArr[0]) : 
+			$this->getFirewall()->getMainPageBundle();
+
+		if(!$this->bundle){
+			$this->response = $this->createNotFoundResponse('Can\'t find Bundle');
+		}
+
+		$this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
+		$this->action     = isset($pathArr[2])? strtolower($pathArr[2]) : self::defaultActionName;
+                
+        $this->params = array_slice($pathArr, 3);
+       
         
     }                   
 	
@@ -108,7 +99,7 @@ class Router {
     
     /**
      * Получает ответ
-     * @return \Services\HttpFound\Request
+     * @return RequestInterface
      */
     public function getRequest()
     {
@@ -126,6 +117,75 @@ class Router {
         return self::$config;
     }
     
+	/**
+	 * 
+	 * @param \ReflectionMethod $refMethod
+	 * @param RequestInterface $request
+	 * @return array 
+	 */
+	public function getActionParamsValues(\ReflectionMethod $refMethod, RequestInterface $request)
+	{
+		$refParams  = $refMethod->getParameters();
+		if(!isset($refParams[0])){
+			return [];
+		}
+		
+		$pathParams = array_slice($request->getUri()->getPathParts(), 3);
+		
+		foreach($refParams as $i => $refParam){
+			$paramName = $refParam->getName();
+			$value = null;
+			if(isset($pathParams[$i])){
+				$value = $pathParams[$i];
+			}elseif(isset($_POST[$paramName])){
+				$value = $_POST[$paramName];
+			}elseif(isset($_GET[$paramName])){
+				$value = $_GET[$paramName];
+			}
+			
+			
+						
+		}
+		var_dump($refParams);
+		//die();
+		$actionParams=[];
+		
+		$getParams = '';
+		
+		die();
+		if(sizeof($refParams)){				
+			for($x=0; $x<count($refParams); $x++){
+				
+				if($refParams[$x]->isVariadic()){
+					$actionParams = array_merge($actionParams, $paramsUrl);
+					break;
+				}
+				
+				
+				if($refParams[$x]->isDefaultValueAvailable()){					
+					$actionParams[$x] = $refParams[$x]->getDefaultValue();
+				}else{
+					$actionParams[$x] = null;
+				}		
+							
+				if(isset($paramsRequest[$refParams[$x]->name])){
+					$actionParams[$x] = $paramsRequest[$refParams[$x]->name];					
+					unset($paramsRequest[$refParams[$x]->name]);					
+				}
+				
+				if(isset($paramsUrl[$x])){
+					$actionParams[$x] = $paramsUrl[$x];
+					unset($paramsUrl[$x]);					
+				}
+				
+				if(isset($params[$refParams[$x]->name])){
+					$actionParams[$x] = $params[$refParams[$x]->name];
+					unset($params[$refParams[$x]->name]);
+				}												 
+			}			
+        }    
+				
+	}
     /**
      * Выполняет запрос
      * 
@@ -149,11 +209,10 @@ class Router {
             return $this->response;
         }                
         
-        $this->response = $this->runAction();
+        return $this->response = $this->runAction();
         
     }
-    
-    
+        
     private function runAction()
     {
         
@@ -166,35 +225,32 @@ class Router {
         try {
             $refController = new \ReflectionClass( $controllerClass );                        
         }catch(\ReflectionException $e){
-            throw new \ControllerException("Не найден контроллер $controllerClass");            
+            throw new \ControllerNotFoundException("Не найден контроллер $controllerClass");            
         }
         
         try {
             $refMethod = $refController->getMethod($method);
-        }catch(\ReflectionException $e){
-            throw new \ControllerException("Не найден метод $method контроллера $controllerClass");
+        }catch(\ReflectionException $e) {
+            throw new \ControllerMethodNotFoundException("Не найден метод $method контроллера $controllerClass");
         }
-        
-        /* Проверка прав доступа */
-        $firewall = $this->getFirewall();                       
-        if(!$firewall->checkAccess($this->request)){
-            if(!$firewall->getSecurity()->isAuthorized()){
-                return $this->response = $this->createNeedAuthenticateResponse();
-            }else{
-                return $this->response = $this->createAccessDeniedResponse();
-            }            
-        }        
-        /* --- Проверка прав доступа */
-        
-        
-        $rights = $this->getFirewall()->getSecurity()->getRights($this->request);
-                		        
-        if(!$refController->isSubclassOf('\Classes\Controller')){
+		
+		if(!$refController->isSubclassOf('\Classes\Controller')){
             throw new \ControllerException("Контроллер должен наследовать класс Classes\Controller ($controllerClass) ");
-        }                
-        
-        
-        $refParams  = $refMethod->getParameters();
+        }
+		
+        /* Проверка прав доступа */
+        $firewall = $this->getFirewall();                     
+        if(!$firewall->checkAccess($this->request)){
+            if(!$firewall->getSecurity()->isAuthorized()){				
+                return $this->createNeedAuthenticateResponse();
+            }else{
+                return $this->createAccessDeniedResponse();
+            }          
+        }        
+		
+        /* --- Проверка прав доступа */                
+        $rights = $this->getFirewall()->getSecurity()->getRights($this->request);               		                                                    		
+		$params = $this->getActionParamsValues($refMethod, $this->request);
         
         $queryParams = $this->request->getUri()->getQuery();
         $pathParams = $this->params;
@@ -390,7 +446,7 @@ class Router {
     }
 
     /**
-     * 
+     * @TODO RESPONCE REDIRECT
      * @param Uri $uri
      * @return boolean
      */
@@ -399,8 +455,8 @@ class Router {
         $path = $uri->getPath();
 
         if(substr($path, -1) =='/' && $path != "/" && preg_match('~^\/[^/]+\/$~',$path)) {
-                header('Location: '.$uri->getScheme().'://'.$uri->getHost().substr($path, 0, -1));
-                die();
+			header('Location: '.$uri->getScheme().'://'.$uri->getHost().substr($path, 0, -1));
+			die();
         }
 
         return true;
@@ -417,13 +473,13 @@ class Router {
      */
     public static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
     {
-            if(!preg_match('~^(https?:\/\/)?([\w\.]+)\.([a-z]{2,6}\.?)(\/[\w\.]*)*\/?$~', $uri, $result))
+           /* if(!preg_match('~^(https?:\/\/)?([\w\.]+)\.([a-z]{2,6}\.?)(\/[\w\.]*)*\/?$~', $uri, $result))
             {
                     $uri = 'https://'.$_SERVER['HTTP_HOST'].$uri;
             }
 
             $request = new HttpFound\Request($method, $uri, $headers, $body, $version);
-            return new Router($request);		
+            return new Router($request);*/
     }
 	
     /**

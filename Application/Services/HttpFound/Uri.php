@@ -42,6 +42,9 @@ class Uri implements UriInterface
     /** @var string Uri fragment. */
     private $fragment = '';
 
+	/** @var array parts of path /part0/part1/part2 */
+	private $pathParts = [];
+	
     /**
      * @param string $uri URI to parse
      */
@@ -308,19 +311,24 @@ class Uri implements UriInterface
     }
 	
 	/**
-	 * Возращает путь без бандла 
-	 * http://example.com/Bundle/controller/action --> /controller/action
-	 * @return string
+	 * 
+	 * @param int $num index number of pathParts
+	 * @return array|string|null 
 	 */
-	public function getPathWithoutBundle()
+	public function getPathParts(int $num = null)
 	{
-		$path = $this->request->getUri()->getPath();
-		$pathArr = explode('/', $path);
-		if(isset($pathArr[2])){
-			return array_slice($path, 2);
+
+		if(!isset($this->pathParts[0]) && $this->path !== '/'){
+            $pathArr = [];
+            $path = substr($this->path, 1);			            
+			$this->pathParts = explode('/', $path);
+		}
+		
+		if(null !== $num){
+			return isset($this->pathParts[$num])? $this->pathParts[$num] : null;
 		}
 				
-		return '/';		
+		return $this->pathParts;
 	}
 	
     public function withScheme($scheme)

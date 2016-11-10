@@ -32,5 +32,6 @@ interface FirewallInterface {
 	 * 
 	 * @param array $config
 	 */
-	public function setConfig(array $config=[]);	
+	public function setConfig(array $config=[]);
+		
 }

@@ -65,7 +65,11 @@ class Security {
         return $this->user !== null;
     }   
     
-    
+    /**
+	 * @TODO RIGHTS
+	 * @param RequestInterface $request
+	 * @return type
+	 */
     public function getRights(RequestInterface $request)
     {
         return [];

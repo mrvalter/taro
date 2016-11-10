@@ -60,24 +60,9 @@ class Firewall implements FirewallInterface{
             throw new \SystemErrorException('Path to Bundle\'s dir not found', 'bundlesPath: '.$bundlesPath);
         }
         
-        $requiredbundles = $config->getValue('firewall', 'required_bundles');
-        
-        if(null !== $requiredbundles && sizeof($requiredbundles)){
-            foreach($requiredbundles as $name=>$bundle){
-                $bundle = trim($bundle);
-                $name = trim($name);
-                if(!$bundle || !$name){
-                    throw new \ConfigException('Requires Bundles has emprty rows');
-                }
-                $this->requireBundles[strtolower($name)] = $bundle;
-                $classLoader->add($bundle, $bundlesPath);
-            }
-        }
-                
-        $this->publicUrls = $config->getValue('firewall', 'public_urls');
-                
-        $mainPageBundle       = $config->getValue('firewall', 'main_page_bundle');
-
+		$this->requireBundles = $this->getRequireBundlesFromConfig($config, $classLoader, $bundlesPath);
+		$this->publicUrls = $this->getPublicUrlsFromConfig($config);						
+        $mainPageBundle   = $config->getValue('firewall', 'main_page_bundle');
         $this->mainPageBundle = $mainPageBundle && isset($this->requireBundles[strtolower($mainPageBundle)])?
             $this->requireBundles[strtolower($mainPageBundle)] :
             null;
@@ -86,7 +71,7 @@ class Firewall implements FirewallInterface{
         $this->bundlesPath = $bundlesPath;
         $this->xdebugLoaded = extension_loaded('xdebug');     
     }        
-    
+    	
     /**
      * 
      * @return  Security
@@ -114,18 +99,27 @@ class Firewall implements FirewallInterface{
         return $this->mainPageBundle;
     }
     
-    public function setConfig(array $config=[])
+	/**
+     * Ищет подключенный бандл по имени
+     * @param string $name
+     * @return string|false
+     */
+    public function getBundleByName($name)
     {
-
-        $this->config = $config;
-        $this->bundlesPath = $config['bundles_path'];
-        $this->requireBundles();
-        $this->setErrorReporting();
-
-        return $this;
-    }    		
-		
-    public function getExceptionResponse(\Exception $exception)
+        $name = strtolower($name);
+        return isset($this->requireBundles[$name])? $this->requireBundles[$name] : null;
+    }    
+    
+    public function getPathToBundleByName($name)
+    {
+        if(null === $this->findBundleByName($name)){
+            return null;
+        }
+        
+        return $this->bundlesPath.'/'.$this->getBundleByName($name);
+    }            
+	
+	public function getExceptionResponse(\Exception $exception)
     {                
         
         var_dump($exception->getMessage());
@@ -146,6 +140,17 @@ class Firewall implements FirewallInterface{
         return $response;        
     }
 	
+    public function setConfig(array $config=[])
+    {
+
+        $this->config = $config;
+        $this->bundlesPath = $config['bundles_path'];
+        $this->requireBundles();
+        $this->setErrorReporting();
+
+        return $this;
+    }    				    
+	
     public function setErrorReporting()
     {		
         $errorH = isset($this->config['error_reporting'])? $this->config['error_reporting'] : 0;
@@ -161,27 +166,7 @@ class Firewall implements FirewallInterface{
 
         $this->errorReporting = $errorH;
         return $this;
-    }
-
-    /**
-     * Ищет подключенный бандл по имени
-     * @param string $name
-     * @return string|false
-     */
-    public function getBundleByName($name)
-    {
-        $name = strtolower($name);
-        return isset($this->requireBundles[$name])? $this->requireBundles[$name] : null;
-    }    
-    
-    public function getPathToBundleByName($name)
-    {
-        if(null === $this->findBundleByName($name)){
-            return null;
-        }
-        
-        return $this->bundlesPath.'/'.$this->getBundleByName($name);
-    }            
+    }   
     
     /**
      * @TODO check Access by rights
@@ -189,17 +174,17 @@ class Firewall implements FirewallInterface{
      * @return boolean
      */
     public function checkAccess(RequestInterface $request)
-    {   
-        $path = $request->getUri()->getPath();
-                 
-        /* Проверяем на публичный доступ */
-        if(isset($this->publicUrls[0])){                   
-            foreach($this->publicUrls as $pattern){
-                if(preg_match($pattern, $path)){
-                    return true;
-                }
-            }
-        }
+    {           		
+		
+		/* Возможно путь является публичным */		
+		$path = $request->getUri()->getPath();
+		if(isset($this->publicUrls[0])){
+			foreach($this->publicUrls as $pUrl){	
+				if(preg_match($pUrl, $path)){
+					return true;
+				}
+			}
+		}			
 
         if(!$this->getSecurity()->authorize()){
             return false;
@@ -230,6 +215,55 @@ class Firewall implements FirewallInterface{
         }
         
         return $responce;        
-    }           
+    }
+	
+	/**
+	 * 
+	 * @param Config $config
+	 * @param object $classLoader
+	 * @return array
+	 * @throws \ConfigException
+	 */
+	private function getRequireBundlesFromConfig(Config $config, $classLoader, $bundlesPath)
+	{
+		$returnRequireBundles = [];		
+		$requiredbundles = $config->getValue('firewall', 'required_bundles');        
+        if(null !== $requiredbundles && sizeof($requiredbundles)){
+            foreach($requiredbundles as $name=>$bundle){
+                $bundle = trim($bundle);
+                $name = trim($name);
+                if(!$bundle || !$name){
+                    throw new \ConfigException('Requires Bundles has emprty rows');
+                }
+                $returnRequireBundles[strtolower($name)] = $bundle;
+                $classLoader->add($bundle, $bundlesPath);
+            }
+        }
+		
+		return $returnRequireBundles;
+	}
+	
+	/**
+	 * 
+	 * @param Config $config
+	 * @return array
+	 */
+	private function getPublicUrlsFromConfig(Config $config)
+	{
+		$returnPublicUrls = [];
+		$publicUrls = $config->getValue('firewall', 'public_urls');
+		if(null !== $publicUrls && isset($publicUrls[0])){
+			foreach($publicUrls as $pUrl){
+				if(substr($pUrl, 0, 1) == '~' && strpos($pUrl, '~', 1) !== false ){
+					$pattern = $pUrl;
+				}else{
+					$pattern = '~^'.str_replace('/','\\/', preg_replace('~[^a-z/-0-9]~ui','', $pUrl)).'(?=\\/|$)~ui';
+				}
+				$returnPublicUrls [] = $pattern;
+			}				
+		}
+		
+		return $returnPublicUrls;
+	}
     
 }

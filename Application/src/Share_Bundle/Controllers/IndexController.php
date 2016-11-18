@@ -1,7 +1,7 @@
 <?php
 namespace Share_Bundle\Controllers;
 
-use Classes\Controller;
+use Kernel\Classes\Controller;
 
 class IndexController extends Controller{
     

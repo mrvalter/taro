@@ -34,31 +34,27 @@ return array(
         'autoloader'  => 'RESERVED', // сервис подгрузки классов		
         
 	
-        'user_repository' => [
-            'class' => 'Classes\\UserRepository'
-        ],
-
-        'authenticator'   => [
-            'class'  => 'Services\\Security\\Authentication\\DbAuthenticator',
+		'authenticator'   => [
+            'class'  => 'Kernel\\Services\\Security\\Authentication\\DbAuthenticator',
             'params' => ['@user_repository']
         ],
-        
-        /*'authenticator'   => [
+		
+		/*'authenticator'   => [
             'class'  => 'Services\\Security\\Authentication\\LdapAuthenticator',
             'params' => ['@user_repository', '@ldap']
         ],*/
 		
+        'user_repository' => [
+            'class' => 'Classes\UserRepository'
+        ],
+				
         'session_storage' => [
-            'class' =>'Services\Security\SessionStorage\NativeSessionStorage',
+            'class' =>'Kernel\Services\Security\SessionStorage\NativeSessionStorage',
 
         ], 
         
-        'menu' => [
-            'class' =>'Services\Menu',
-        ],
-        
-        'security' => [
-            'class' =>'Services\Security\Security',
+		'security' => [
+            'class' =>'Kernel\Services\Security\Security',
             'params'=>[
                 'authenticator'  => '@authenticator',
                 'userRepository' => '@user_repository',
@@ -66,9 +62,15 @@ return array(
                 
             ]
         ],
+		
+        'menu' => [
+            'class' =>'Services\Menu',
+        ],
+        
+        
         
         'db'=>[
-            'class'=> 'Services\DB',
+            'class'=> 'Kernel\Services\DB',
             'params'=>[
                 'dbases'=> [
                     /** сервис работы с базой данных Office */

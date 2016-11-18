@@ -1,29 +1,18 @@
 <?php
+include_once 'functions.php';
 
 /** 
  * @autor Fedyakin Alexander
  */
 
 use Composer\Autoload\ClassLoader as ClassLoader;
-use Classes\AjaxResponce as AjaxResponce;
-use Services\Config as Config;
-use Services\Router as Router;
-use Services\RedirectManager as RedirectManager;
-use Services\View as View;
-use Services\Menu as Menu;
-use Services\Menu\MenuItem as MenuItem;
-use Services\Interfaces\ViewInterface as ViewInterface;
-use Services\Logger as Logger;
-use Services\Firewall;
+use Kernel\Services\{Config, Router, Firewall};
+use Kernel\Services\HttpFound\Response;
 
-
-
-include_once 'functions.php';
 /**
  * Front Controller (Singleton)
- * Класс включает в себя инициализацию сервисов,
- * инициализация роутера, получение от него ответа
- * 
+ * Класс включает в себя инициализацию сервисов;
+ * инициализацию роутера, отправка ему запроса, получение от него ответа.
  * 
  */
 class App {
@@ -37,17 +26,14 @@ class App {
     /** @var string Путь до папки конфигов */
     const MAIN_CONFIGS_PATH = 'config';
 
-    /** @var string окончания девовского енвиромента, когда показываются ошибки */
+    /** @var string окончания девовского енвиромента, когда показываются ошибки, собирается статистика */
     const ENVIROMENT_DEV_POSTFIX = 'dev';
     
     private static $_instance = null;    
     private static $widgets=array();
    
     
-    /**
-     *
-     * @var string Название окружения prod | dev 
-     */
+    /** @var string Название окружения prod | dev */
     private $env;
     
     /** @var string путь к публичной папке приложения */
@@ -60,9 +46,7 @@ class App {
     private $layoutsPath;
     
     /** @var string путь к папке с шаблонами */
-    private $mainConfigPath;
-    
-    
+    private $mainConfigPath;        
 	
     /** @var ClassLoader */
     private $classLoader;
@@ -72,18 +56,18 @@ class App {
     
     
     private function __construct()
-    {        
+    {
+		
         $this->bundlesPath    = __DIR__.'/'.self::BUNDLES_PATH;
         $this->layoutsPath    = __DIR__.'/'.self::LAYOUTS_PATH;
-        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;                
-	
+        $this->mainConfigPath = __DIR__.'/'.self::MAIN_CONFIGS_PATH;                	
     }
     
     /**
      * 
      * @return \App Возвращает экземпляр Приложения
      */
-    public static function o()
+    public static function o(): App
     {
         return self::$_instance;
     }        
@@ -94,12 +78,12 @@ class App {
      * Возвращает обсолютный путь до папки конфига
      * @return string 
      */
-    public function getMainConfigPath()
+    public function getMainConfigPath(): string
     {
         return $this->mainConfigPath;
     }       
     
-    public function getPathToSelfBundle()
+    public function getPathToSelfBundle(): string
     {
         
         return $this->bundlesPath.'/'.$this->getService('router')->getBundle();        
@@ -109,7 +93,7 @@ class App {
      * 
      * @return string Возвращает обсолютный пас к папки Application
      */
-    public function getAppPath()
+    public function getAppPath(): string
     {
         
         return __DIR__;
@@ -119,7 +103,7 @@ class App {
      * Возвращает значение переменной окружения
      * @return string
      */
-    public function getEnv()
+    public function getEnv(): string
     {
         
         return $this->env;
@@ -129,13 +113,13 @@ class App {
      * Возвращает путь к публичной папке приложения
      * @return string 
      */
-    public function getHttpPath()
+    public function getHttpPath(): string
     {
         
         return $this->httpPath;
     }        	   
 	
-    public function setClassLoader(ClassLoader $loader)
+    public function setClassLoader(ClassLoader $loader): self
     {
         
         $this->classLoader = $loader;     
@@ -163,7 +147,7 @@ class App {
      * @param string $env
      * @return \App
      */    
-    private function setEnv($env='')
+    private function setEnv($env=''): self
     {        
         $this->env = $env;
         return $this;
@@ -173,7 +157,7 @@ class App {
      * Устанавливает путь к публичной папке Приложения
      * @param string $httpPath
      */
-    private function setHttpPath($httpPath)
+    private function setHttpPath($httpPath): self
     {
         
         $this->httpPath = $httpPath;
@@ -184,6 +168,7 @@ class App {
      * Стартует приложение
      * 
      * @param string $httpPath Путь к директории публичной папки приложения
+	 * @param ClassLoader $loader
      */
     public static function run($httpPath, ClassLoader $loader)
     {
@@ -218,7 +203,7 @@ class App {
     }
     
 	/** 
-	 * Запускает приложение в редиме консоли
+	 * Запускает приложение в режиме консоли
 	 */
     public function runC()
     {
@@ -254,7 +239,7 @@ class App {
             $this->ServiceContainer = new ServiceContainer($config->getValue('services'));
             $this->ServiceContainer->addService('config', $config);
             
-            $sessionStorage = $this->ServiceContainer->get('session_storage')->start();            
+            $sessionStorage = $this->ServiceContainer->get('session_storage')->start();          
 
             /* Инициализируем файрволл */
             $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
@@ -268,10 +253,10 @@ class App {
                 echo $e->getMessage().'<br />';
                 $e->getTraceAsString().'<br />';
                 die();
-        }catch(\Throwable $e){
+        }/*catch(\Throwable $e){
 			var_dump($e);
 			die();
-		}	
+		}	*/
 		
         return $this;		       
     }
@@ -280,7 +265,7 @@ class App {
      * Запуск контроллера
      */
     private function runHttpApplication()
-    {                
+    {            
         return Router::createFromGlobals()->sendRequest();
     }
         
@@ -295,16 +280,7 @@ class App {
             }
         }
         
-    }
-    
-    public function getDefaultView()
-    {
-        $Viewconfig = $this->getService('_config')->get('project_descr');		
-		$View = new View($Viewconfig);		
-        $View->setLayoutPath($this->appPath.'/'.'layouts');
-        return $View;
-        
-    }    
+    }            
 	
     public function mooveSessionUnreadToTmp()
     {

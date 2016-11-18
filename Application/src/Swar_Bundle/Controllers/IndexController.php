@@ -1,7 +1,7 @@
 <?php
 namespace Swar_Bundle\Controllers;
 
-use Classes\Controller;
+use kernel\Classes\Controller;
 
 
 class IndexController extends Controller{

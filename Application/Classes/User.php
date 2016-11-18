@@ -2,7 +2,7 @@
 
 namespace Classes;
 
-use Services\Security\Interfaces\UserInterface;
+use Kernel\Services\Security\Interfaces\UserInterface;
 
 /**
  * @autor Fedyakin Alexander

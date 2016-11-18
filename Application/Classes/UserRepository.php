@@ -2,8 +2,8 @@
 
 namespace Classes;
 
-use Services\Security\Interfaces\UserRepositoryInterface;
-use Services\Security\Interfaces\UserInterface;
+use Kernel\Services\Security\Interfaces\UserRepositoryInterface;
+use Kernel\Services\Security\Interfaces\UserInterface;
 use Classes\User;
 /**
  * @autor Fedyakin Alexander

@@ -1,11 +1,10 @@
 <?php
 namespace Kernel\Services;
 
-use Kernel\Services\Interfaces\FirewallInterface;
-use Psr\Http\Message\{RequestInterface, ResponseInterface};
+use Kernel\Interfaces\{FirewallInterface, ControllerInterface};
 use Kernel\Services\HttpFound\{ServerRequest, Response, Uri};
 use Kernel\Services\Config;
-
+use Psr\Http\Message\{RequestInterface};
 /**
  * 
  * @TODO REDIRECTS
@@ -226,18 +225,19 @@ class Router {
             throw new \ControllerMethodNotFoundException("Не найден метод $method контроллера $controllerClass");
         }
 		
-		if(!$refController->isSubclassOf('Kernel\Classes\Controller')){
-            throw new \ControllerException("Контроллер должен наследовать класс Classes\Controller ($controllerClass) ");
+		if(!$refController->isSubclassOf('Kernel\Interfaces\ControllerInterface')){
+            throw new \ControllerException("Контроллер должен реализовывать Kernel\Interfaces\ControllerInterface ($controllerClass) ");
         }
+		
 		
         /* Проверка прав доступа */
         $firewall = $this->getFirewall();                   
         if(!$firewall->checkAccess($this->request)){
-            if(!$firewall->getSecurity()->isAuthorized()){				
+            if(!$firewall->getSecurity()->isAuthorized()){			
                 return $this->createNeedAuthenticateResponse();
             }else{
                 return $this->createAccessDeniedResponse();
-            }          
+            }       
         }        
 		        
         $rights = $this->getFirewall()->getSecurity()->getRights($this->request);

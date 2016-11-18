@@ -1,6 +1,6 @@
 <?php
 namespace Kernel\Services;
-use Kernel\Services\Interfaces\FirewallInterface;
+use Kernel\Interfaces\FirewallInterface;
 use Kernel\Services\Security\Interfaces\{
 	SessionStorageInterface, 
 	UserRepositoryInterface, 

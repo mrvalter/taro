@@ -6,9 +6,9 @@ namespace Kernel\Classes;
  * @category MED CRM
  */
 
-use Services\Interfaces\ViewInterface as ViewInterface;
-use Services\Menu\MenuItem as MenuItem;
-use Services\Router as Router;
+use Services\Interfaces\ViewInterface;
+use Services\Router;
+use Kernel\Interfaces\ControllerInterface;
 
 
 /**
@@ -16,7 +16,7 @@ use Services\Router as Router;
  *
  * 
  */
-abstract class Controller {     
+abstract class Controller implements ControllerInterface {     
     
 	public $title;
 	

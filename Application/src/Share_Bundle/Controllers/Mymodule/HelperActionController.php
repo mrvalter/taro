@@ -1,4 +1,5 @@
 <?php
+namespace Share_Bundle\Controllers\Mymodule;
 
 use Kernel\Classes\Controller;
 
@@ -11,6 +12,6 @@ class HelperActionController extends Controller {
 	
 	public function helpMeAction()
 	{
-		
+		die('HELP ME');
 	}
 }

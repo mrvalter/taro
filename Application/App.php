@@ -247,6 +247,7 @@ class App {
             
             Router::setFirewall($firewall);
             Router::setConfig($config);
+			Router::setServiceContainer($this->ServiceContainer);
 
         }catch(\Exception $e){            
                 echo 'Системная ошибка !<br />';			

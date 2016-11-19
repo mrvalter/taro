@@ -6,9 +6,16 @@ namespace Kernel\Classes;
  * @category MED CRM
  */
 
-use Services\Interfaces\ViewInterface;
-use Services\Router;
-use Kernel\Interfaces\ControllerInterface;
+use Kernel\Services\Interfaces\ViewInterface;
+use Kernel\Services\HttpFound\Uri;
+use Kernel\Services\Router;
+use Kernel\Services\DB\PDODriver;
+use Kernel\Interfaces\{ControllerInterface};
+use Kernel\Services\Firewall;
+use Kernel\Services\Security\Interfaces\UserInterface;
+
+
+use ServiceContainer;
 
 
 /**
@@ -18,58 +25,69 @@ use Kernel\Interfaces\ControllerInterface;
  */
 abstract class Controller implements ControllerInterface {     
     
-	public $title;
+	const defaultActionName = 'index';
+	const actionPostfix     = 'Action';
+	private static $rights = [];
 	
-    private $serviceContainer=null;    
-    private $View= null;    	            
-	private $rights = null;
-        
-    
-    public function __construct(ViewInterface $view) {
-        $this->View = $view;
-    }
-    
-    /**
-     * Возвращает объект сервиса по имени
-     * @param string $name Имя сервиса
-     * @return object Объект сервиса
-	 * @deprecated
-     */
-    public function get($name)
-    {
-        return $this->serviceContainer->get($name);
-    }
+	public $title;		
 	
-	/**
-     * Возвращает объект сервиса по имени
-     * @param string $name Имя сервиса
-     * @return object Объект сервиса
-	 * 
-	 */
-    public function getService($name)
-    {
-        return $this->serviceContainer->get($name);
-    }
+	private $className = '';
+	private $bundleName;
+	private $controllerName;
+	
+	private $serviceContainer = null;
+	private $uri = null;
+    
+	
+	
+    public function __construct(ServiceContainer $serviceContainer, Uri $uri)
+	{
+		$this->uri = $uri;
+        $this->className = get_class($this);
+		$this->_initNames(); 
+		$this->serviceContainer = $serviceContainer;
+    }    								
+	
+	public function _runController()
+	{	
+		$pathParams = $this->_getPathParts();		
+		$action = ($pathParams[0] ?? self::defaultActionName).self::actionPostfix;
+		
+		if(!is_callable([$this, $action])){
+			throw new \ControllerMethodNotFoundException('', "Не найден метод $action контроллера ". get_class($this));
+		}
+		
+		return $this->callAction($this, $action, array_slice($pathParams, 1));
+	}
+   
+	protected static function callAction(ControllerInterface $oController, string $action, array $params=[])
+	{
+		var_dump(get_class($oController));
+		var_dump($action);
+		var_dump($params);
+		var_dump('call action Controller');
+		die();
+	}				
 	
     /**
      * Возвращает объект PDO
-     * @param string $db
-     * @return \Services\DB\PDODriver
      */
-    public function getPDOFrom($db)
+    final protected function getPDO(string $db): PDODriver
     {
-            return $this->getService('db')->getDBConn($db)->getPdo();
+		return $this->getService('db')->getDBConn($db)->getPdo();
     }
 
+	
     /**
      * Возвращает объект Пользователя ADUser
-     * @return \Classes\ADUser
+     * @return UserInterface
      */
-    public function getUser()
+    final protected function getUser(): UserInterface
     {
-            return $this->get('security')->getUser();
+		return $this->getFirewall()->getSecurity()->getUser();
     }
-    
+    		
+	
     /**
      * Возвращает объект Объект класса сервиса показа шаблонов
      * @return \Services\View 
@@ -86,7 +104,7 @@ abstract class Controller implements ControllerInterface {
     */
    public function getConfig($config='')
    {
-           return $this->get('_config')->get($config);
+		return $this->get('_config')->get($config);
    }
 
    /**
@@ -95,13 +113,13 @@ abstract class Controller implements ControllerInterface {
     */
    public function getMenu()
    {
-           return $this->serviceContainer->get('menu');
+		return $this->serviceContainer->get('menu');
    }
 
    /**
     * Возвращает Объект Меню, относящийся к этому контроллеру и экшену,
     * с правами и Опшинами
-    * @return \Services\Menu\MenuItem
+    * @return UserInterface
     */    
    public function getRights()
    {
@@ -341,5 +359,69 @@ abstract class Controller implements ControllerInterface {
 			$RouterRM = strtoupper($this->get('router')->getRequest()->getRequestMethod());
 			return $RouterRM == $method;
 		}        
-    }			
+	}
+	
+	
+	private function _initNames(): self
+	{
+		
+		$names = explode('\\', $this->className);
+		$this->bundleName = $names[0];
+		$this->controllerName = str_replace(Router::controllerPostfix, '', array_pop($names));
+		
+		return $this;
+	}		
+	
+	final public function getClassName(): string
+	{
+		
+		return $this->className;
+	}	
+	
+	final protected function getServiceContainer(): ServiceContainer
+	{
+		
+		return $this->serviceContainer;
+	}
+		
+	final protected function getUri(): Uri
+	{
+		return $this->uri;
+	}
+	
+	/**
+     * Возвращает объект сервиса по имени
+     * @param string $name Имя сервиса
+     * @return object Объект сервиса
+	 * 
+	 */
+    final protected function getService($name)
+    {
+		
+        return $this->serviceContainer->get($name);
+    }
+	
+	final protected function getControllerName(): string
+	{
+		
+		return $this->controllerName;
+	}				
+	
+	final protected function getBundleName(): string
+	{
+		return $this->bundleName;
+	}
+	
+	final protected function getFirewall(): Firewall
+	{
+		
+		return $this->getService('firewall');
+	}
+	
+	
+	final protected function _getPathParts(): array
+	{
+		return array_slice($this->uri->getPathParts(), 2);
+	}
+	
 }

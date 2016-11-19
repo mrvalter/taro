@@ -10,7 +10,7 @@ namespace Kernel\Services\HttpFound;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UriInterface;
+use Kernel\Services\HttpFound\Uri;
 
 /**
  * PSR-7 request implementation.
@@ -42,7 +42,7 @@ class Request implements RequestInterface
         $body = null,
         $version = '1.1'
     ) {
-        if (!($uri instanceof UriInterface)) {
+        if (!($uri instanceof Uri)) {
             $uri = new Uri($uri);
         }
 
@@ -102,7 +102,7 @@ class Request implements RequestInterface
         return $new;
     }
 
-    public function getUri()
+    public function getUri(): Uri
     {
         return $this->uri;
     }

@@ -4,9 +4,8 @@
  * @autor Fedyakin Alexander
  * @copyright (c) 2015, Materia Medica Group
  */
-namespace Services;
-use Services\Interfaces\ViewInterface as ViewInterface;
-use \App as App;
+namespace Kernel\Services;
+use Kernel\Interfaces\ViewInterface;
 
 /**
  * Шаблонизатор

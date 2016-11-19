@@ -177,7 +177,7 @@ class Firewall implements FirewallInterface{
      */
     public function checkAccess(RequestInterface $request)
     {           		
-		
+		return true;
 		/* Возможно путь является публичным */		
 		$path = $request->getUri()->getPath();
 		if(isset($this->publicUrls[0])){

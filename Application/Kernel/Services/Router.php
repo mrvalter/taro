@@ -1,27 +1,30 @@
 <?php
 namespace Kernel\Services;
-
+use ServiceContainer;
 use Kernel\Interfaces\{FirewallInterface, ControllerInterface};
-use Kernel\Services\HttpFound\{ServerRequest, Response, Uri};
+use Kernel\Services\Firewall;
+use Kernel\Services\HttpFound\{ServerRequest, Response, Request, Uri};
 use Kernel\Services\Config;
-use Psr\Http\Message\{RequestInterface};
+use \Psr\Http\Message\RequestInterface;
+
 /**
  * 
  * @TODO REDIRECTS
  */
 class Router {                          
 	
-    const defaultControllerName = 'Index';
-    const defaultActionName     = 'index';    
+    const defaultControllerName = 'Index';        
     const controllerPostfix     = 'Controller';
-    const bundlePostfix         = '_Bundle';
-    const actionPostfix         = 'Action';
+    const bundlePostfix         = '_Bundle';    
 	
-    /** @var FirewallInterface*/
+    /** @var Firewall */
     private static $firewall = null;
     
     /** @var Config*/
     private static $config = null;
+	
+	/** @var ServiceContainer */
+	private static $serviceContainer = null;
     
     /** @var string */
     private $bundle;
@@ -31,11 +34,8 @@ class Router {
     
     /** @var string */
     private $action;                   
-
-    /** @var array */
-    private $params; 
 	
-    /** @var Request */
+    /** @var RequestInterface */
     private $request;
     
     /** @var Response */
@@ -46,15 +46,24 @@ class Router {
     
     /**
      * 
-     * @param RequestInterface $request
+     * @param Request $request
      */
     private function __construct(RequestInterface $request)
     {
         
         if(null === $this->getFirewall()){
-            throw new \SystemErrorException('Firewall not initialized');
+            throw new \SystemErrorException('Firewall not initialized in Router');
         }
         
+		if(null === self::$serviceContainer){
+            throw new \SystemErrorException('serviceContainer not initialized in Router');
+        }
+		
+		if(null === self::$config){
+            throw new \SystemErrorException('config not initialized in Router');
+        }
+		
+		
         $this->request = $request;
         //$this->response = new Response();        
         
@@ -74,18 +83,14 @@ class Router {
 		}
 
 		$this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
-		$this->action     = isset($pathArr[2])? strtolower($pathArr[2]) : self::defaultActionName;
-                
-        $this->params = array_slice($pathArr, 3);
-       
-        
+		
     }                   
 	
     /**
      * 
      * @return Firewall
      */
-    public function getFirewall(): FirewallInterface
+    public function getFirewall(): Firewall
     {
             return self::$firewall;
     }
@@ -197,57 +202,48 @@ class Router {
             return $this->handleRequest();
         }        
     }        
-        
+    
+	public function getControllerObject(): ControllerInterface
+	{
+		$controllerClass = "{$this->getBundle()}\\Controllers\\{$this->getController()}Controller";
+		
+		if(!class_exists($controllerClass)){
+			throw new \ControllerNotFoundException("Не найден контроллер $controllerClass");
+		}
+		
+		$oController = new $controllerClass(self::$serviceContainer, $this->getRequest()->getUri());
+		
+		if(!$oController instanceof ControllerInterface){
+			throw new \SystemErrorException("Контроллер {$controllerClass} должен осуществлять интерфейс Kernel\Interfaces\ControllerInterface");
+		}
+		
+		return $oController;
+	}
+	
     private function handleRequest()
     {
         
 		/* Если ответ уже готов, прерываем выполнение */
         if($this->response !== null){
             return $this->response;
-        }                
+        }		        
 		
 		
-        $controller = $this->getController();        
-        $bundle = $this->getBundle();
-        
-        $controllerClass = "$bundle\\Controllers\\$controller".'Controller';
-        $method = $this->getAction().'Action';
-                
-        try {
-            $refController = new \ReflectionClass( $controllerClass );                        
-        }catch(\ReflectionException $e){
-            throw new \ControllerNotFoundException("Не найден контроллер $controllerClass");            
-        }
-        
-        try {
-            $refMethod = $refController->getMethod($method);
-        }catch(\ReflectionException $e) {
-            throw new \ControllerMethodNotFoundException("Не найден метод $method контроллера $controllerClass");
-        }
-		
-		if(!$refController->isSubclassOf('Kernel\Interfaces\ControllerInterface')){
-            throw new \ControllerException("Контроллер должен реализовывать Kernel\Interfaces\ControllerInterface ($controllerClass) ");
-        }
-		
-		
-        /* Проверка прав доступа */
+		/* Проверка прав доступа на чтение и запись*/
         $firewall = $this->getFirewall();                   
         if(!$firewall->checkAccess($this->request)){
             if(!$firewall->getSecurity()->isAuthorized()){			
                 return $this->createNeedAuthenticateResponse();
             }else{
                 return $this->createAccessDeniedResponse();
-            }       
+            }      
         }        
+						
+		$viewer = $this->getControllerObject()->_runController();
+		
+		
+		die();
 		        
-        $rights = $this->getFirewall()->getSecurity()->getRights($this->request);
-		$params = $this->getActionParamsValues($refMethod, $this->request);
-        
-        $queryParams = $this->request->getUri()->getQuery();
-        $pathParams = $this->params;
-        
-        var_dump($refParams);
-        die('ddssd');
     }
     
     /**
@@ -485,12 +481,12 @@ class Router {
     
     /**
      * 
-     * @param FirewallInterface $firewall
+     * @param Firewall $firewall
      */
-    public static function setFirewall(FirewallInterface $firewall)
+    public static function setFirewall(Firewall $firewall)
     {
         if(self::$firewall === null){
-                self::$firewall = $firewall;
+			self::$firewall = $firewall;
         }
     }
     
@@ -502,6 +498,17 @@ class Router {
     {
         if(self::$config === null){
                 self::$config = $config;
+        }
+    }
+	
+	/**
+     * 
+     * @param FirewallInterface $firewall
+     */
+    public static function setServiceContainer(ServiceContainer $container)
+    {
+        if(self::$serviceContainer === null){
+			self::$serviceContainer = $container;
         }
     }
 }

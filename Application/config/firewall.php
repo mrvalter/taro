@@ -9,14 +9,19 @@ return [
 		
 		'~^\/share(?=\\/|$)~ui'      // открыт публичный доступ к бандлу share	регуляркой
     ],    
-    
+    	
     'required_bundles' => [
         'swar'    => 'Swar_Bundle',
 		'shared'  => 'Share_Bundle',
         'share'   => 'Share_Bundle',
     ],
-    
-    
+        
     'main_page_bundle' => 'share', // Путь до бандла главной страницы
+	
+	'actions'=> [
+		'authorize'     => '/share/firewall/authorize',
+		'access_denied' => '/share/firewall/accessdenied',
+		'not_found'     => '/share/router/notfound'
+	]
     
 ];

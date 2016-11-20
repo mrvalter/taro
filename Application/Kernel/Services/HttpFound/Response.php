@@ -74,8 +74,12 @@ class Response implements ResponseInterface
     /** @var string */
     private $reasonPhrase = '';
 
+	/** @var string */
+	private $systemPhrase='';
+	
     /** @var int */
     private $statusCode = 200;
+		
 
     /**
      * @param int                                  $status  Status code
@@ -117,14 +121,16 @@ class Response implements ResponseInterface
         return $this->reasonPhrase;
     }
 
-    public function withStatus($code, $reasonPhrase = '')
-    {
+    public function withStatus($code, $reasonPhrase = '', $systemPhrase='')
+    {		
         $new = clone $this;
         $new->statusCode = (int) $code;
         if ($reasonPhrase == '' && isset(self::$phrases[$new->statusCode])) {
             $reasonPhrase = self::$phrases[$new->statusCode];
         }
         $new->reasonPhrase = $reasonPhrase;
+		$new->systemPhrase = $systemPhrase;
+		
         return $new;
     }
 }

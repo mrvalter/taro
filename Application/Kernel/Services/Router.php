@@ -2,9 +2,12 @@
 namespace Kernel\Services;
 use ServiceContainer;
 use Kernel\Interfaces\{FirewallInterface, ControllerInterface};
+use Kernel\Interfaces\RouteInterface;
 use Kernel\Services\Firewall;
 use Kernel\Services\HttpFound\{ServerRequest, Response, Request, Uri};
 use Kernel\Services\Config;
+use Kernel\Services\Router\{LocalRoute, CurlRoute, ResponseRoute};
+
 use \Psr\Http\Message\RequestInterface;
 
 /**
@@ -13,9 +16,13 @@ use \Psr\Http\Message\RequestInterface;
  */
 class Router {                          
 	
+	const accessDeniedAction = ['Kernel\System\Http\Controllers\FirewallController', 'accessDenied'];
+	const pageNotFoundAction = ['Kernel\System\Http\Controllers\FirewallController', 'pageNotFound'];
+	
     const defaultControllerName = 'Index';        
     const controllerPostfix     = 'Controller';
-    const bundlePostfix         = '_Bundle';    
+    const bundlePostfix         = '_Bundle';
+		
 	
     /** @var Firewall */
     private static $firewall = null;
@@ -35,7 +42,7 @@ class Router {
     /** @var string */
     private $action;                   
 	
-    /** @var RequestInterface */
+    /** @var Request */
     private $request;
     
     /** @var Response */
@@ -43,12 +50,15 @@ class Router {
     
     /** @var array */
     private $errors;
+	
+	/** @var array */
+	private $route;
     
     /**
      * 
      * @param Request $request
      */
-    private function __construct(RequestInterface $request)
+    private function __construct(Request $request)
     {
         
         if(null === $this->getFirewall()){
@@ -65,25 +75,14 @@ class Router {
 		
 		
         $this->request = $request;
-        //$this->response = new Response();        
+        $this->response = new Response();
         
 		$uri = $request->getUri();
 		if(!$this->checkUri($uri)){
 			return;
 		}
 
-		$pathArr = $uri->getPathParts();
-		
-		$this->bundle = isset($pathArr[0])?
-			$this->getFirewall()->getBundleByName($pathArr[0]) : 
-			$this->getFirewall()->getMainPageBundle();
-
-		if(!$this->bundle){
-			$this->response = $this->createNotFoundResponse('Can\'t find Bundle');
-		}
-
-		$this->controller = isset($pathArr[1])? ucfirst($pathArr[1]) : self::defaultControllerName;
-		
+		$this->route = $this->createRoute($request->getUri());									
     }                   
 	
     /**
@@ -92,9 +91,93 @@ class Router {
      */
     public function getFirewall(): Firewall
     {
-            return self::$firewall;
+		return self::$firewall;
     }
     
+	/**
+	 * @TODO CurlRoute
+	 * @param Uri $uri
+	 * @return RouteInterface
+	 */
+	private function createRoute(Uri $uri): RouteInterface
+	{
+		$host = $uri->getHost();
+		
+        if($host !== 'localhost' && $host !== $_SERVER['HTTP_HOST']){
+            return new CurlRoute();
+        } 
+						
+		try {
+			/* Проверяем существует ли контроллер */
+
+			$pathArr = $uri->getPathParts();	
+			$bundle = isset($pathArr[0])?
+				$this->getFirewall()->getBundleByName($pathArr[0]) :
+				$this->getFirewall()->getMainPageBundle();
+
+			if(!$bundle){
+				throw new \PageNotFoundException('Бандл не существует!');
+			}		
+
+			if(!isset($pathArr[1])){
+				$controller = self::defaultControllerName;
+			}elseif(preg_match('~[a-z09]+~ui', $pathArr[1])){
+				$controller = ucfirst($pathArr[1]);
+			}else{
+				throw new \ControllerNotFoundException('Непозволительное имя контроллера');
+			}						
+
+			$controllerClass = "$bundle\\Controllers\\$controller".self::controllerPostfix;						
+			
+			if(!class_exists($controllerClass)){
+				throw new \ControllerNotFoundException("Контроллер $controllerClass не существует");
+			}						
+			
+			/* Проверка прав доступа на чтение и запись */
+			$firewall = $this->getFirewall();                
+			if(!$firewall->checkAccess($uri)){
+				if(!$firewall->getSecurity()->isAuthorized()){
+					$path = $firewall->getAuthorisePath();			
+					if(!$path){
+						throw new \AccessDeniedException();
+					}
+					$uri = new Uri($path);
+				}else {
+					throw new \AccessDeniedException();
+				}
+			}
+			
+		}catch (\PageNotFoundException $ex){
+			
+			$path = $firewall->getNotFoundPath();
+			if(!$path){
+				return new ResponseRoute($this->response->withStatus(404,'', $ex->getMessage()));
+			}
+			$this->response = $this->response->withStatus(404);
+			$uri = new Uri($path);
+			
+		}catch(\AccessDeniedException $ex){
+			
+			$path = $firewall->getAccessDeniedPath();
+			if(!$path){
+				return new ResponseRoute($this->response->withStatus(403,'', $ex->getMessage()));
+			}
+			
+			$this->response = $this->response->withStatus(403);
+			$uri = new Uri($path);
+		}
+		
+		
+		
+		$params = array_slice($this->request->getUri()->getPathParts(), 2);				
+		
+	}
+	
+	public function getClassFromUri(Uri $uri): string
+	{
+		
+	}
+	
     /**
      * Получает ответ
      * @return RequestInterface
@@ -229,21 +312,20 @@ class Router {
         }		        
 		
 		
-		/* Проверка прав доступа на чтение и запись*/
-        $firewall = $this->getFirewall();                   
-        if(!$firewall->checkAccess($this->request)){
-            if(!$firewall->getSecurity()->isAuthorized()){			
-                return $this->createNeedAuthenticateResponse();
-            }else{
-                return $this->createAccessDeniedResponse();
-            }      
-        }        
-						
-		$viewer = $this->getControllerObject()->_runController();
 		
 		
-		die();
-		        
+		
+		$this->controllerExecuter = new ControllerExecuter(
+			self::$serviceContainer,				
+			$this->getBundle(),
+			$this->getController(), 
+			$this->getAction(),
+			$this->request->getUri()
+		);
+		
+		
+		$viewer = $this->getControllerObject()->_runController();			
+		return new Response(200);
     }
     
     /**
@@ -354,53 +436,7 @@ class Router {
             }
             $this->bundlesPath = $bundlesPath;
             return $this;
-    }		
-    
-    /**
-     * @TODO СДЕЛАТЬ РЕДИРЕКТ
-     * @param type $controller
-     * @param type $action
-     * @param type $params
-     * @param type $code
-     * @throws \RouteException
-     */
-    public function redirect($controller, $action='', $params=array(), $code=301)
-    {				
-				
-        $bundle = $this->request === null ? $this->getBundle() : $this->getBundleFromUrl();				
-        $pathes[0] = $bundle;
-        $pathes[1] = strtolower(trim($controller));
-        $pathes[2] = strtolower(trim($action));
-
-        if(!$pathes[1]){
-                throw new \RouteException('не передан контроллер в Редирект Роутера');
-        }
-
-        if(!$pathes[2] || $pathes[2] == $defaultAction){
-                unset($pathes[2]);
-        }
-
-
-        if(!isset($pathes[2]) && ($pathes[1]=='' || $pathes[1]==$this->defaultController)){
-                $pathes[1] = '';
-        }
-						
-        $url = '/'.implode('/',$pathes);
-
-        if(sizeof($params)){
-            foreach($params as $key=>$value){
-                    $arrParams[] = "$key=$value";
-            }			
-            $url .='?'.implode('&', $arrParams);
-        }				
-		
-        if($url){     
-            header('Location: '.$url);
-            exit();
-        }
-                
-        throw new \RouteException("Не найден путь для редиректа ($routeName)");
-    }     
+    }		        
 	
     /**
      * @TODO Сделать 

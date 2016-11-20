@@ -1,17 +1,12 @@
 <?php
 namespace Kernel\Services;
+
 use Kernel\Interfaces\FirewallInterface;
-use Kernel\Services\Security\Interfaces\{
-	SessionStorageInterface, 
-	UserRepositoryInterface, 
-	AuthenticatorInterface									
-};
-use Kernel\Services\Security\Authentication\AuthenticationManager;
-use Kernel\Services\Security\Csrf\CsrfManager;
 use Kernel\Services\Security\Security;
 use Kernel\Services\HttpFound\Response;
 use Kernel\Services\Config;
-use Kernel\Services\Router;
+
+
 
 use Composer\Autoload\ClassLoader;
 
@@ -32,8 +27,8 @@ use Psr\Http\Message\RequestInterface;
  * модифицирует исходящие данные если это требуется.
  * Пункт в конфиге - security
  */
-class Firewall implements FirewallInterface{
-          
+class Firewall implements FirewallInterface{    	
+	
     /** @var array */
     private $requireBundles;
     
@@ -51,6 +46,9 @@ class Firewall implements FirewallInterface{
     
     /** @var boolean */
     private $xdebugLoaded;
+	
+	/** @var array */
+	private $actions;
     
     /**
      * @param Security $security
@@ -71,7 +69,8 @@ class Firewall implements FirewallInterface{
         
         $this->security = $security;
         $this->bundlesPath = $bundlesPath;
-        $this->xdebugLoaded = extension_loaded('xdebug');     
+        $this->xdebugLoaded = extension_loaded('xdebug');
+		$this->actions = $config->getValue('firewall', 'actions');
     }        
     	
     /**
@@ -101,6 +100,22 @@ class Firewall implements FirewallInterface{
         return $this->mainPageBundle;
     }
     
+	
+	public function getAuthorisePath()
+	{
+		return $this->actions['authorize'] ?? null;
+	}
+	
+	public function getAccessDeniedPath()
+	{
+		return $this->actions['access_denied'] ?? null;
+	}		
+	
+	public function getNotFoundPath()
+	{
+		return $this->actions['not_found'] ?? null;
+	}
+	
 	/**
      * Ищет подключенный бандл по имени
      * @param string $name
@@ -122,8 +137,7 @@ class Firewall implements FirewallInterface{
     }            
 	
 	public function getExceptionResponse(\Exception $exception)
-    {                
-        
+    {                        
         var_dump($exception->getMessage());
         return new Response(503);
         
@@ -171,11 +185,11 @@ class Firewall implements FirewallInterface{
     }   
     
     /**
-     * @TODO check Access by rights
+     * @TODO check Access by rights POST - right W, get - right R
      * @param Request $request
      * @return boolean
      */
-    public function checkAccess(RequestInterface $request)
+    public function checkAccess(Uri $uri)
     {           		
 		return true;
 		/* Возможно путь является публичным */		
@@ -204,20 +218,7 @@ class Firewall implements FirewallInterface{
     {
         
         return false;
-    }       
-    
-    public function buildExceptionResponse(\Exception $exception, Router $router)
-    {                
-        
-        //var_dump($exception->);
-        if($this->xdebugLoaded){
-            //xdebug_print_function_stack( $exception->getMessage() );
-        }else{
-            $responce = new Response(404, [], $exception->getMessage());            
-        }
-        
-        return $responce;        
-    }
+    }              
 	
 	/**
 	 * 

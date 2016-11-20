@@ -8,6 +8,6 @@
 /**
  * Исключение при работе с базой данных
  */
-class ControllerMethodNotFoundException extends AppException {
+class ControllerMethodNotFoundException extends PageNotFoundException {
     //put your code here
 }

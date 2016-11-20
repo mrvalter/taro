@@ -10,4 +10,12 @@ $loader->add('Interfaces\\', __DIR__);
 $loader->add('', __DIR__.'/Kernel/Exceptions');
 $loader->add('', __DIR__.'/Exceptions');
 
+
+
+/*Twig_Autoloader::register();
+$twLoader = new Twig_Loader_Filesystem( __DIR__.'/layouts');
+$twig = new Twig_Environment($twLoader, array(
+    'cache' => __DIR__.'/cache/Twig',
+));*/
+
 return $loader;

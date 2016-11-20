@@ -6,15 +6,10 @@ namespace Kernel\Classes;
  * @category MED CRM
  */
 
-use Kernel\Services\Interfaces\ViewInterface;
-use Kernel\Services\HttpFound\Uri;
-use Kernel\Services\Router;
-use Kernel\Services\DB\PDODriver;
-use Kernel\Interfaces\{ControllerInterface};
-use Kernel\Services\Firewall;
+//use Kernel\Services\Interfaces\ViewInterface;
+use Kernel\Services\{Router, Firewall, HttpFound\Uri, DB\PDODriver};
+use Kernel\Interfaces\{ControllerInterface, ViewInterface};
 use Kernel\Services\Security\Interfaces\UserInterface;
-
-
 use ServiceContainer;
 
 
@@ -57,16 +52,25 @@ abstract class Controller implements ControllerInterface {
 			throw new \ControllerMethodNotFoundException('', "Не найден метод $action контроллера ". get_class($this));
 		}
 		
-		return $this->callAction($this, $action, array_slice($pathParams, 1));
+		return self::callAction($this, $action, array_slice($pathParams, 1));
 	}
    
 	protected static function callAction(ControllerInterface $oController, string $action, array $params=[])
 	{
-		var_dump(get_class($oController));
+		
+		$refController = new \ReflectionClass($oController);
+		$refMethod = $refController->getMethod($action);
+		$refParams = $refMethod->getParameters();
+		var_dump($refParams);
+		foreach($refParams as $refParam){			
+			var_dump((string)$refParam->getType());
+		}
+		
+		/*var_dump(get_class($oController));
 		var_dump($action);
 		var_dump($params);
-		var_dump('call action Controller');
-		die();
+		var_dump('call action Controller');*/
+		return true;
 	}				
 	
     /**
@@ -79,52 +83,13 @@ abstract class Controller implements ControllerInterface {
 
 	
     /**
-     * Возвращает объект Пользователя ADUser
+     * Возвращает объект авторизовавшегося Пользователя
      * @return UserInterface
      */
     final protected function getUser(): UserInterface
     {
 		return $this->getFirewall()->getSecurity()->getUser();
-    }
-    		
-	
-    /**
-     * Возвращает объект Объект класса сервиса показа шаблонов
-     * @return \Services\View 
-     */
-    public function getView()
-    {
-        return $this->View;
-    }                          
-    
-	/**
-    * Возвращает массив конфига по ключу
-    * @param type $config
-    * @return array
-    */
-   public function getConfig($config='')
-   {
-		return $this->get('_config')->get($config);
-   }
-
-   /**
-    * Возвращает сервис Меню
-    * @return \Services\Menu
-    */
-   public function getMenu()
-   {
-		return $this->serviceContainer->get('menu');
-   }
-
-   /**
-    * Возвращает Объект Меню, относящийся к этому контроллеру и экшену,
-    * с правами и Опшинами
-    * @return UserInterface
-    */    
-   public function getRights()
-   {
-           return $this->rights;
-   }
+    }    				  
 
    /**
     * Возвращает Опшен по имени в menu_url, либо null, если не найден
@@ -190,16 +155,7 @@ abstract class Controller implements ControllerInterface {
     {		
             $this->rights = $menuItem;
             return $this;
-    }	    
-
-    /**
-     * Устанавливает сервис контейнер
-     * @param \ServiceContainer $serviceContainer
-     */
-    public function _setServiceContainer(\ServiceContainer $serviceContainer)
-    {
-        $this->serviceContainer = $serviceContainer;
-    }
+	}   
     
     /**
      * 

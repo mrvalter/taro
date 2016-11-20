@@ -107,47 +107,16 @@ class Router {
             return new CurlRoute();
         } 
 						
-		try {
-			/* Проверяем существует ли контроллер */
+		$firewall = $this->getFirewall();
+		
+		try {			
 
-			$pathArr = $uri->getPathParts();	
-			$bundle = isset($pathArr[0])?
-				$this->getFirewall()->getBundleByName($pathArr[0]) :
-				$this->getFirewall()->getMainPageBundle();
-
-			if(!$bundle){
-				throw new \PageNotFoundException('Бандл не существует!');
-			}		
-
-			if(!isset($pathArr[1])){
-				$controller = self::defaultControllerName;
-			}elseif(preg_match('~[a-z09]+~ui', $pathArr[1])){
-				$controller = ucfirst($pathArr[1]);
-			}else{
-				throw new \ControllerNotFoundException('Непозволительное имя контроллера');
-			}						
-
-			$controllerClass = "$bundle\\Controllers\\$controller".self::controllerPostfix;						
-			
-			if(!class_exists($controllerClass)){
-				throw new \ControllerNotFoundException("Контроллер $controllerClass не существует");
-			}						
-			
-			/* Проверка прав доступа на чтение и запись */
-			$firewall = $this->getFirewall();                
-			if(!$firewall->checkAccess($uri)){
-				if(!$firewall->getSecurity()->isAuthorized()){
-					$path = $firewall->getAuthorisePath();			
-					if(!$path){
-						throw new \AccessDeniedException();
-					}
-					$uri = new Uri($path);
-				}else {
-					throw new \AccessDeniedException();
-				}
+			$c = $this->foundController($uri);
+			if($this->checkAccess($uri)){			
+				$controllerClass = $c;
 			}
 			
-		}catch (\PageNotFoundException $ex){
+		}catch (\PageNotFoundException $ex) {
 			
 			$path = $firewall->getNotFoundPath();
 			if(!$path){
@@ -155,6 +124,9 @@ class Router {
 			}
 			$this->response = $this->response->withStatus(404);
 			$uri = new Uri($path);
+			
+		}catch (\NonAuthorisedException $ex){
+			$path = $firewall->getAuthorisePath();
 			
 		}catch(\AccessDeniedException $ex){
 			
@@ -171,11 +143,50 @@ class Router {
 		
 		$params = array_slice($this->request->getUri()->getPathParts(), 2);				
 		
-	}
+	}		
 	
-	public function getClassFromUri(Uri $uri): string
+	private function foundController(Uri $uri, $throwException = false): string
 	{
 		
+		$pathArr = $uri->getPathParts();	
+		$bundle = isset($pathArr[0])?
+			$this->getFirewall()->getBundleByName($pathArr[0]) :
+			$this->getFirewall()->getMainPageBundle();
+
+		if(!$bundle){
+			throw new \PageNotFoundException('Бандл не существует!');
+		}		
+
+		if(!isset($pathArr[1])){
+			$controller = self::defaultControllerName;
+		}elseif(preg_match('~[a-z09]+~ui', $pathArr[1])){
+			$controller = ucfirst($pathArr[1]);
+		}else{
+			throw new \ControllerNotFoundException('Непозволительное имя контроллера');
+		}						
+
+		$controllerClass = "$bundle\\Controllers\\$controller".self::controllerPostfix;						
+
+		if(!class_exists($controllerClass)){
+			throw new \ControllerNotFoundException("Контроллер $controllerClass не существует");
+		}
+			
+		return $controllerClass;
+	}
+	
+	private function checkAccess(Uri $uri): bool
+	{
+		/* Проверка прав доступа на чтение и запись */
+		$firewall = $this->getFirewall();                
+		if(!$firewall->checkAccess($uri)){
+			if(!$firewall->getSecurity()->isAuthorized()){
+				throw new \NonAuthorisedException();
+			}else {
+				throw new \AccessDeniedException();
+			}
+		}
+		
+		return true;
 	}
 	
     /**

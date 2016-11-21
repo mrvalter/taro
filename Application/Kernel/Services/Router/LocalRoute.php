@@ -10,10 +10,11 @@ use Kernel\Services\HttpFound\{Response, Uri};
  * @author sworion
  */
 class LocalRoute extends Route{
-	const controllerPostfix     = 'Controller';
-	const defaultControllerName = 'Index';     
-	const defaultActionName     = 'index';
-	const actionPostfix         = 'Action';
+	const controllerPostfix       = 'Controller';
+	const defaultControllerName   = 'Index';     
+	const defaultActionName       = 'index';
+	const actionPostfix           = 'Action';
+	const actionControllerPostfix = 'ActionController';
 	
 	private $bundle;	
 	private $config;	
@@ -58,13 +59,45 @@ class LocalRoute extends Route{
 	
 	private function runController( string $controllerClass, array $params=[]): Response
 	{
+		if(isset($params[0]) && preg_match('~[^a-z09_]+~ui', $params[0])){
+			throw new \PageNotFoundException('','Экшен создержит некорректные символы');
+		}
+		
 		$actionName   = $params[0] ?? self::defaultActionName;
 		$actionMethod = $actionName.self::actionPostfix;
+				
+		$refController = new \ReflectionClass($controllerClass);		
 		
-		$refController = new \ReflectionClass($controllerClass);
 		if(!$refController->hasMethod($actionMethod)){
-			var_dump('action method not exists');
+			if(!$refController->isSubclassOf('Kernel\Classes\ModuleController')){
+				throw new \PageNotFoundException('','Action not found');
+			}
+			
+			$controllerClass = 
+				$refController->getNamespaceName().'\\'.
+				str_replace(self::controllerPostfix, '', $refController->getShortName()).'\\'.
+				ucfirst($actionName).self::actionControllerPostfix;			
+			
+			if(!class_exists($controllerClass)){
+				throw new \PageNotFoundException('','ActionController not found');
+			}
+			
+			$refController = new \ReflectionClass($controllerClass);
+			if(isset($params[1]) && !preg_match('~[a-z09_]+~ui', $params[0])){
+				throw new \PageNotFoundException('','Экшен ЭкшенКонтроллера создержит некорректные символы');
+			}
+			
+			$actionName   = $params[1]?? self::defaultActionName;
+			$actionMethod = $actionName.self::actionPostfix;
+			
+			if(!$refController->hasMethod($actionMethod)){
+				throw new \PageNotFoundException('','ActionController found,  but method not found');
+			}
+			
+			$params = array_slice($params, 2);
+			
 		}
+		
 		var_dump($params);
 		return new Response();
 		var_dump($controllerClass);
@@ -72,6 +105,7 @@ class LocalRoute extends Route{
 		var_dump('RUN Controller');
 		die();
 	}
+	
 	
 	private function getSystemResponse($code, $path = '', $message='', $systemMessage='')
 	{				

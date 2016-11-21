@@ -226,9 +226,6 @@ class App {
         ob_start();
                 
         try {                                   
-        
-            /* Инициализируем Контейнер сервисов */
-            $this->ServiceContainer = new ServiceContainer();
             
             /* Инициализируем сервис конфига */                 
             $config = new Config($this->getEnv());
@@ -239,7 +236,7 @@ class App {
             $this->ServiceContainer = new ServiceContainer($config->getValue('services'));
             $this->ServiceContainer->addService('config', $config);
             
-            $sessionStorage = $this->ServiceContainer->get('session_storage')->start();          
+            $this->ServiceContainer->get('session_storage')->start();
 
             /* Инициализируем файрволл */
             $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);

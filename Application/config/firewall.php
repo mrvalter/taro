@@ -38,8 +38,7 @@ return [
 	 */
 	'file_download_actions' => [
 		'/share/getfile',
-	]
-    
+	],			    
 	
 	
 	/* 1*: 

@@ -5,7 +5,7 @@ use Kernel\Classes\Controller;
 
 class IndexController extends Controller{
     
-    public function indexAction(int $root, $id=null, $action='')
+    public function indexAction(int $root, $id='')
     {
         die('mainPageAction');
     }		

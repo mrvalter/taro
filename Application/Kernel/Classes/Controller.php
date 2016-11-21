@@ -11,6 +11,7 @@ use Kernel\Services\{Router, Firewall, HttpFound\Uri, DB\PDODriver};
 use Kernel\Interfaces\{ControllerInterface, ViewInterface};
 use Kernel\Services\Security\Interfaces\UserInterface;
 use ServiceContainer;
+use \Psr\Http\Message\RequestInterface;
 
 
 /**
@@ -24,23 +25,23 @@ abstract class Controller implements ControllerInterface {
 	const actionPostfix     = 'Action';
 	private static $rights = [];
 	
-	public $title;		
+	public $title;
 	
 	private $className = '';
 	private $bundleName;
 	private $controllerName;
 	
 	private $serviceContainer = null;
-	private $uri = null;
+	private $request;
     
 	
 	
-    public function __construct(ServiceContainer $serviceContainer, Uri $uri)
+    public function __construct(ServiceContainer $serviceContainer, RequestInterface $request)
 	{
-		$this->uri = $uri;
-        $this->className = get_class($this);
-		$this->_initNames(); 
-		$this->serviceContainer = $serviceContainer;
+		$this->request = $request;
+        $this->className = get_class($this);		
+		$this->serviceContainer = $serviceContainer;		
+		
     }		   	
 	
     /**
@@ -285,18 +286,7 @@ abstract class Controller implements ControllerInterface {
 			$RouterRM = strtoupper($this->get('router')->getRequest()->getRequestMethod());
 			return $RouterRM == $method;
 		}        
-	}
-	
-	
-	private function _initNames(): self
-	{
-		
-		$names = explode('\\', $this->className);
-		$this->bundleName = $names[0];
-		$this->controllerName = str_replace(Router::controllerPostfix, '', array_pop($names));
-		
-		return $this;
-	}		
+	}				
 	
 	final public function getClassName(): string
 	{

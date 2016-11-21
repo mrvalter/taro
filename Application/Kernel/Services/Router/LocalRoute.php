@@ -3,7 +3,8 @@ namespace Kernel\Services\Router;
 
 
 use Kernel\Services\Firewall;
-use Kernel\Services\HttpFound\{Response, Uri};
+use Kernel\Services\HttpFound\{Response, Uri, Request};
+use \Psr\Http\Message\RequestInterface;
 /**
  * Description of Route
  *
@@ -16,17 +17,20 @@ class LocalRoute extends Route{
 	const actionPostfix           = 'Action';
 	const actionControllerPostfix = 'ActionController';
 	
-	private $bundle;	
+	private $bundle;
+	private $controllerName;
 	private $config;	
 	private $serviceContainer;
+	private $request;
 	private $uri;
 	private $isSystemResponce;
 	
-	public function __construct(\ServiceContainer $serviceContainer, Uri $uri, bool $isSystemResponce = false)
+	public function __construct(\ServiceContainer $serviceContainer, RequestInterface $request, bool $isSystemResponce = false)
 	{
 		parent::__construct();
 		
-		$this->uri = $uri;
+		$this->request = $request;
+		$this->uri = $request->getUri();		
 		$this->serviceContainer = $serviceContainer;
 		$this->isSystemResponce = $isSystemResponce;
 	}
@@ -54,7 +58,7 @@ class LocalRoute extends Route{
 			);
 			
 			
-		}
+		} 
 	}
 	
 	private function runController( string $controllerClass, array $params=[]): Response
@@ -96,16 +100,55 @@ class LocalRoute extends Route{
 			
 			$params = array_slice($params, 2);
 			
+		}else{
+			$params = array_slice($params, 1);			
 		}
 		
-		var_dump($params);
-		return new Response();
-		var_dump($controllerClass);
-		var_dump($params);
-		var_dump('RUN Controller');
-		die();
+		$refMethod = $refController->getMethod($actionMethod);				
+		$callableParams = $this->getCallableParams($refMethod, $params);				
+				
+		$viewer = $this->serviceContainer->get('viewer');		
+		$tpath = $this->getFirewall()->getPathToBundle($this->bundle).'/view/'.$this->controllerName;
+		$tnamespace = str_replace('\\', '_', $controllerClass);
+		$viewer->addTemplatePath($tpath, $tnamespace);
+		var_dump($viewer->render('@'.$tnamespace.'/hello.php'));
+				die();
+		
+		$oController = new $controllerClass($this->serviceContainer, $this->request);
+		
+		return $refMethod->invokeArgs($oController, $callableParams);
+		
 	}
 	
+	private function getCallableParams(\ReflectionMethod $refMethod, array $urlParams=[]): array
+	{
+		
+		$refParams = $refMethod->getParameters();
+		
+		if(!$refMethod->isVariadic() && count($refParams) < count($urlParams)){
+			throw new \PageNotFoundException('', 'Количество переданных параметров в URL превышает количество параметров метода');
+		}
+		
+		$callParams = [];
+		foreach($refParams as $i=>$refParam){
+			if(!$refParam->isDefaultValueAvailable() && !isset($urlParams[$i])){
+				throw new \ResponseException(400, '', 'Не передан обязательный параметр в метод');
+			}
+			
+			switch((string)$refParam->getType()){
+				case 'int':
+					if(isset($urlParams[$i]) && !is_numeric($urlParams[$i])){
+						throw new \ResponseException(404, '', 'Переданный параметр не соответствует типу');
+					}
+					break;
+			}
+			
+			$callParams[$i] = $urlParams[$i]?? null;
+		}
+				
+		return $callParams;	
+		
+	}
 	
 	private function getSystemResponse($code, $path = '', $message='', $systemMessage='')
 	{				
@@ -115,7 +158,7 @@ class LocalRoute extends Route{
 			return $this->response;
 		}
 		
-		$route = new LocalRoute($this->serviceContainer, new Uri($path), true);
+		$route = new LocalRoute($this->serviceContainer, new Request('GET',$path), true);
 		$this->addSubRoute($route);
 		$systemResponce = $route->execute();
 		
@@ -131,7 +174,7 @@ class LocalRoute extends Route{
 	{
 		
 		$pathArr = $uri->getPathParts();	
-		$bundle = isset($pathArr[0])?
+		$this->bundle = $bundle = isset($pathArr[0])?
 			$this->getFirewall()->getBundleByName($pathArr[0]) :
 			$this->getFirewall()->getMainPageBundle();
 
@@ -147,6 +190,8 @@ class LocalRoute extends Route{
 			throw new \ControllerNotFoundException('', 'Непозволительное имя контроллера');
 		}						
 
+		$this->controllerName = $controller;
+		
 		$controllerClass = "$bundle\\Controllers\\$controller".self::controllerPostfix;						
 
 		if(!class_exists($controllerClass)){

@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Kernel\Services\HttpFound\Uri;
+use Psr\Http\Message\UriInterface;
 
 /**
  * PSR-7 request implementation.

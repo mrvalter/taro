@@ -114,13 +114,13 @@ class Firewall implements FirewallInterface{
         return isset($this->requireBundles[$name])? $this->requireBundles[$name] : null;
     }    
     
-    public function getPathToBundleByName($name)
+    public function getPathToBundle($name)
     {
-        if(null === $this->findBundleByName($name)){
-            return null;
-        }
+        if(!in_array($name, $this->requireBundles)){
+			return null;
+		}
         
-        return $this->bundlesPath.'/'.$this->getBundleByName($name);
+        return $this->bundlesPath.'/'.$name;
     }            
 	
 	public function getExceptionResponse(\Exception $exception)

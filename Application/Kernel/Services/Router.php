@@ -67,14 +67,9 @@ class Router {
 		
 		
         $this->request = $request;
-        $this->response = new Response();
-        
-		$uri = $request->getUri();
-		if(!$this->checkUri($uri)){
-			return;
-		}
+        $this->response = new Response();        		
 
-		$this->route = $this->createRoute($request->getUri());
+		$this->route = $this->createRoute($request);
 		
     }                   
 	
@@ -92,15 +87,16 @@ class Router {
 	 * @param Uri $uri
 	 * @return RouteInterface
 	 */
-	private function createRoute(Uri $uri): RouteInterface
+	private function createRoute(RequestInterface $request): RouteInterface
 	{
+		$uri = $request->getUri();
 		$host = $uri->getHost();
 		
         if($host !== 'localhost' && $host !== $_SERVER['HTTP_HOST']){
             return new CurlRoute();
         } 
 								
-		return new LocalRoute(self::$serviceContainer, $uri);
+		return new LocalRoute(self::$serviceContainer, $request);
 		
 	}		
 	
@@ -346,25 +342,7 @@ class Router {
             }
 
             return $this;
-    }
-
-    /**
-     * @TODO RESPONCE REDIRECT
-     * @param Uri $uri
-     * @return boolean
-     */
-    public function checkUri(Uri $uri)
-    {
-        $path = $uri->getPath();
-
-        if(substr($path, -1) =='/' && $path != "/" && preg_match('~^\/[^/]+\/$~',$path)) {
-			header('Location: '.$uri->getScheme().'://'.$uri->getHost().substr($path, 0, -1));
-			die();
-        }
-
-        return true;
-    }	   
-	
+    }   
 	
     /**
      * 

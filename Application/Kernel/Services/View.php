@@ -18,7 +18,7 @@ use Kernel\Interfaces\ViewInterface;
  * @property-read string $title Тайтл страницы
  * 
  */
-class View implements ViewInterface {
+class Viewer implements ViewInterface {
     
 	private static $_mediaPath = null;
 	private static $_globalMediaPath = null;

@@ -9,16 +9,20 @@ abstract class Route implements RouteInterface {
 	
 	private $subRoutes = null;
 	
+	/** @var Response */
+	protected $response;
+	
 	public function __construct()
 	{
 		$this->subRoutes = new ObjectCollection();
+		$this->response = new Response();
 	}
 	
 	public function addSubRoute(RouteInterface $route)
 	{
 		$this->subRoutes->push($route);
 		return $this;
-	}
-		
-	abstract function execute(): Response;
+	}		
+	
+	abstract public function execute(): Response;
 }

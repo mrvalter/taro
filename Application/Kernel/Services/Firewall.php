@@ -3,11 +3,8 @@ namespace Kernel\Services;
 
 use Kernel\Interfaces\FirewallInterface;
 use Kernel\Services\Security\Security;
-use Kernel\Services\HttpFound\Response;
+use Kernel\Services\HttpFound\{Uri, Response};
 use Kernel\Services\Config;
-
-
-
 use Composer\Autoload\ClassLoader;
 
 use Psr\Http\Message\RequestInterface;
@@ -48,7 +45,7 @@ class Firewall implements FirewallInterface{
     private $xdebugLoaded;
 	
 	/** @var array */
-	private $actions;
+	private $systemResponses;
     
     /**
      * @param Security $security
@@ -70,7 +67,7 @@ class Firewall implements FirewallInterface{
         $this->security = $security;
         $this->bundlesPath = $bundlesPath;
         $this->xdebugLoaded = extension_loaded('xdebug');
-		$this->actions = $config->getValue('firewall', 'actions');
+		$this->systemResponses = $config->getValue('firewall', 'system_responses');
     }        
     	
     /**
@@ -101,20 +98,10 @@ class Firewall implements FirewallInterface{
     }
     
 	
-	public function getAuthorisePath()
+	public function getPathBySystemCode($code): string
 	{
-		return $this->actions['authorize'] ?? null;
-	}
-	
-	public function getAccessDeniedPath()
-	{
-		return $this->actions['access_denied'] ?? null;
+		return $this->systemResponses[$code] ?? '';
 	}		
-	
-	public function getNotFoundPath()
-	{
-		return $this->actions['not_found'] ?? null;
-	}
 	
 	/**
      * Ищет подключенный бандл по имени

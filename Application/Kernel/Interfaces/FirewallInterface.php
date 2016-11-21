@@ -1,7 +1,7 @@
 <?php
 namespace Kernel\Interfaces;
 use Kernel\Interfaces\SecurityInterface;
-use Psr\Http\Message\RequestInterface;
+use Kernel\Services\HttpFound\Uri;
 
 interface FirewallInterface {
 
@@ -25,7 +25,7 @@ interface FirewallInterface {
 	 * @param RequestInterface $request
 	 * @return boolean
 	 */
-	public function checkAccess(RequestInterface $request);
+	public function checkAccess(Uri $uri);
 	
 	/**
 	 * 

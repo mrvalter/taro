@@ -41,37 +41,7 @@ abstract class Controller implements ControllerInterface {
         $this->className = get_class($this);
 		$this->_initNames(); 
 		$this->serviceContainer = $serviceContainer;
-    }    								
-	
-	public function _runController()
-	{	
-		$pathParams = $this->_getPathParts();		
-		$action = ($pathParams[0] ?? self::defaultActionName).self::actionPostfix;
-		
-		if(!is_callable([$this, $action])){
-			throw new \ControllerMethodNotFoundException('', "Не найден метод $action контроллера ". get_class($this));
-		}
-		
-		return self::callAction($this, $action, array_slice($pathParams, 1));
-	}
-   
-	protected static function callAction(ControllerInterface $oController, string $action, array $params=[])
-	{
-		
-		$refController = new \ReflectionClass($oController);
-		$refMethod = $refController->getMethod($action);
-		$refParams = $refMethod->getParameters();
-		var_dump($refParams);
-		foreach($refParams as $refParam){			
-			var_dump((string)$refParam->getType());
-		}
-		
-		/*var_dump(get_class($oController));
-		var_dump($action);
-		var_dump($params);
-		var_dump('call action Controller');*/
-		return true;
-	}				
+    }		   	
 	
     /**
      * Возвращает объект PDO

@@ -1,12 +1,13 @@
 <?php
 namespace Kernel\Interfaces;
 
-use \Psr\Http\Message\ResponseInterface;
+use Kernel\Services\HttpFound\Response;
+
 /**
  *
  * @author sworion
  */
 interface RouteInterface {
 	
-	public function execute(): ResponseInterface;
+	public function execute(): Response;
 }

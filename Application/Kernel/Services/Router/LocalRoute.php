@@ -14,8 +14,7 @@ class LocalRoute extends Route{
 	
 	
 	private $bundle;
-	private $controllerName;
-	private $config;	
+	private $controllerName;		
 	private $serviceContainer;
 	private $request;
 	private $uri;

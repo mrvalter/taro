@@ -81,7 +81,7 @@ return [
 		'viewer' => [
 			'class' => 'Kernel\Services\Viewer\TwigViewer',
 			'params' => [
-				'cachePath'   => '%AppPath%/cache/twig',
+				'cachePath'   => '%AppPath%/cache/kernel/twig',
 				'layoutsPath' => '%AppPath%/layouts'
 				
 			]

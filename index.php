@@ -1,4 +1,5 @@
 <?php
+
 setlocale(LC_ALL, 'ru_RU.utf8');
 
 require_once __DIR__.'/Application/App.php';

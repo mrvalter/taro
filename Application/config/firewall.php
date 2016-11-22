@@ -6,15 +6,15 @@ return [
         //'/share',                 // открыт публичный доступ к бандлу share		
 		//'/share/sysinfo',         // открыт публичный доступ к контроллеру sysinfo
 		//'/share/sysinfo/phpinfo', // открыт публичный доступ к методу phpinfo контроллера sysinfo
-		
+		'/firewall/message',
 		'~^\/share(?=\\/|$)~ui'      // открыт публичный доступ к бандлу share	регуляркой
-    ],    
+    ],
 	
 	/* Подключаемые бандлы */
     'required_bundles' => [
-        'swar'    => 'Swar_Bundle',
-		'shared'  => 'Share_Bundle',
-        'share'   => 'Share_Bundle',
+        'swar'     => 'Swar_Bundle',
+		'share'    => 'Share_Bundle',
+        'firewall' => 'Firewall_Bundle',
     ],
         
 	/* путь к главной странице */
@@ -28,7 +28,7 @@ return [
 	'system_responses'=> [
 		'401'     => '/share/firewall/authorize',
 		'403'     => '/share/firewall/accessdenied',
-		'404'     => '/share/router/notfound'
+		'404'     => '/firewall/message/notfound'
 	],
 	
 	/* 

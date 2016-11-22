@@ -21,18 +21,23 @@ use \Psr\Http\Message\RequestInterface;
  */
 abstract class Controller implements ControllerInterface {     
     
-	const defaultActionName = 'index';
-	const actionPostfix     = 'Action';
+	const controllerPostfix       = 'Controller';
+	const defaultControllerName   = 'Index';     
+	const defaultActionName       = 'index';
+	const actionPostfix           = 'Action';
+	const actionControllerPostfix = 'ActionController';
+		
 	private static $rights = [];
 	
 	public $title;
 	
 	private $className = '';
-	private $bundleName;
+	private $bundle;
 	private $controllerName;
 	
 	private $serviceContainer = null;
-	private $request;
+	private $request = null;
+	private $viewer = null;
     
 	
 	
@@ -41,9 +46,32 @@ abstract class Controller implements ControllerInterface {
 		$this->request = $request;
         $this->className = get_class($this);		
 		$this->serviceContainer = $serviceContainer;		
+		$this->viewer = $this->getViewer();
 		
+		$parts = explode('\\', $this->className);
+		$this->bundle = $parts[0];
+		$this->controllerName = str_replace(self::controllerPostfix, '', array_pop($parts));
+		
+		$this->initViewerPathTemplate();
     }		   	
 	
+	public function initViewerPathTemplate()
+	{		
+		$templatePath = $this->getFirewall()->getBundlesPath().'/'.$this->bundle
+		.'/view/'.$this->controllerName;
+		$this->viewer->addTemplatePath($templatePath, $this->getViewNamespace());
+		
+	}
+	
+	public function getViewNamespace()
+	{
+		return str_replace('\\', '_', $this->className);
+	}
+	
+	public function getViewer(): ViewInterface
+	{
+		return $this->serviceContainer->get('viewer');
+	}
     /**
      * Возвращает объект PDO
      */
@@ -206,26 +234,16 @@ abstract class Controller implements ControllerInterface {
             $security = $this->getService('security');
             return $security->checkAccess($router);
     }
-    /**
-     * 
-     * @return \Services\View
-     */
-    public function renderNotFound()
-    {
-            $notFoundView = \App::getNotFoundView();
-            $notFoundView->setLayout($this->View->getLayout());
-            return $this->View = $notFoundView;
-    }
-
+    
     /**
     * Возвращает  HTML темплейта
     * @param string $template Название темплейта
     * @param array $params параметры
     * @return \Services\View
     */
-    public function render($template, $params=array())
+    public function render(string $template, array $params=[]):string
     {
-        return $this->getView()->render($template, $params);
+        return $this->getViewer()->render('@'.$this->getViewNamespace().'/'.$template, $params);
     }
     
     /**
@@ -339,5 +357,6 @@ abstract class Controller implements ControllerInterface {
 	{
 		return array_slice($this->uri->getPathParts(), 2);
 	}
+		
 	
 }

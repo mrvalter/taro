@@ -5,7 +5,8 @@
  * 
  *  %bundle% - имя бандла
  *  %public% - имя публичного бандла   
- *  %bundlePath% - путь от корня до Бандла
+ *  %bundlePath% - путь от корня до Бандла (Запроса действующий запрос)
+ *	%AppPath%    - путь от бандла до директории
  */
 
 return [  	
@@ -78,7 +79,12 @@ return [
         ],
 		
 		'viewer' => [
-			'class' => 'Kernel\Services\Viewer\TwigViewer'
+			'class' => 'Kernel\Services\Viewer\TwigViewer',
+			'params' => [
+				'cachePath'   => '%AppPath%/cache/twig',
+				'layoutsPath' => '%AppPath%/layouts'
+				
+			]
 		]
 	]		       
 ];

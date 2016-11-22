@@ -229,6 +229,9 @@ class App {
             
             /* Инициализируем сервис конфига */                 
             $config = new Config($this->getEnv());
+			$config->addTags([
+				'%AppPath%' => $this->getAppPath()				
+			]);
             $config->addDir($this->mainConfigPath, ['config'])
                     ->addFile($this->mainConfigPath.'/firewall.php', 'firewall', true);
             

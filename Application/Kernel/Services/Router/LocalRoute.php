@@ -1,21 +1,17 @@
 <?php
 namespace Kernel\Services\Router;
 
-
+use Kernel\Classes\Controller;
 use Kernel\Services\Firewall;
 use Kernel\Services\HttpFound\{Response, Uri, Request};
-use \Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\RequestInterface;
 /**
  * Description of Route
  *
  * @author sworion
  */
 class LocalRoute extends Route{
-	const controllerPostfix       = 'Controller';
-	const defaultControllerName   = 'Index';     
-	const defaultActionName       = 'index';
-	const actionPostfix           = 'Action';
-	const actionControllerPostfix = 'ActionController';
+	
 	
 	private $bundle;
 	private $controllerName;
@@ -67,8 +63,8 @@ class LocalRoute extends Route{
 			throw new \PageNotFoundException('','Экшен создержит некорректные символы');
 		}
 		
-		$actionName   = $params[0] ?? self::defaultActionName;
-		$actionMethod = $actionName.self::actionPostfix;
+		$actionName   = $params[0] ?? Controller::defaultActionName;
+		$actionMethod = $actionName . Controller::actionPostfix;
 				
 		$refController = new \ReflectionClass($controllerClass);		
 		
@@ -79,8 +75,8 @@ class LocalRoute extends Route{
 			
 			$controllerClass = 
 				$refController->getNamespaceName().'\\'.
-				str_replace(self::controllerPostfix, '', $refController->getShortName()).'\\'.
-				ucfirst($actionName).self::actionControllerPostfix;			
+				str_replace(Controller::controllerPostfix, '', $refController->getShortName()).'\\'.
+				ucfirst($actionName).Controller::actionControllerPostfix;			
 			
 			if(!class_exists($controllerClass)){
 				throw new \PageNotFoundException('','ActionController not found');
@@ -91,8 +87,8 @@ class LocalRoute extends Route{
 				throw new \PageNotFoundException('','Экшен ЭкшенКонтроллера создержит некорректные символы');
 			}
 			
-			$actionName   = $params[1]?? self::defaultActionName;
-			$actionMethod = $actionName.self::actionPostfix;
+			$actionName   = $params[1]?? Controller::defaultActionName;
+			$actionMethod = $actionName.Controller::actionPostfix;
 			
 			if(!$refController->hasMethod($actionMethod)){
 				throw new \PageNotFoundException('','ActionController found,  but method not found');
@@ -105,19 +101,13 @@ class LocalRoute extends Route{
 		}
 		
 		$refMethod = $refController->getMethod($actionMethod);				
-		$callableParams = $this->getCallableParams($refMethod, $params);				
+		$callableParams = $this->getCallableParams($refMethod, $params);
 				
-		$viewer = $this->serviceContainer->get('viewer');		
-		$tpath = $this->getFirewall()->getPathToBundle($this->bundle).'/view/'.$this->controllerName;
-		$tnamespace = str_replace('\\', '_', $controllerClass);
-		$viewer->addTemplatePath($tpath, $tnamespace);
-		var_dump($viewer->render('@'.$tnamespace.'/hello.php'));
-				die();
-		
 		$oController = new $controllerClass($this->serviceContainer, $this->request);
 		
-		return $refMethod->invokeArgs($oController, $callableParams);
-		
+		$body = $refMethod->invokeArgs($oController, $callableParams);
+		echo $body.'<br /><br /><br />';
+		return new Response();
 	}
 	
 	private function getCallableParams(\ReflectionMethod $refMethod, array $urlParams=[]): array
@@ -143,7 +133,7 @@ class LocalRoute extends Route{
 					break;
 			}
 			
-			$callParams[$i] = $urlParams[$i]?? null;
+			$callParams[$i] = $urlParams[$i]?? $refParam->getDefaultValue();
 		}
 				
 		return $callParams;	
@@ -183,7 +173,7 @@ class LocalRoute extends Route{
 		}		
 
 		if(!isset($pathArr[1])){
-			$controller = self::defaultControllerName;
+			$controller = Controller::defaultControllerName;
 		}elseif(preg_match('~[a-z09]+~ui', $pathArr[1])){
 			$controller = ucfirst($pathArr[1]);
 		}else{
@@ -192,7 +182,7 @@ class LocalRoute extends Route{
 
 		$this->controllerName = $controller;
 		
-		$controllerClass = "$bundle\\Controllers\\$controller".self::controllerPostfix;						
+		$controllerClass = "$bundle\\Controllers\\$controller".Controller::controllerPostfix;						
 
 		if(!class_exists($controllerClass)){
 			throw new \ControllerNotFoundException('', "Контроллер $controllerClass не существует");

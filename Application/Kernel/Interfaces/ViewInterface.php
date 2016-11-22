@@ -19,7 +19,7 @@ interface ViewInterface {
      * @param array $params передаваемые параметры
      * @return string;
      */
-    public function render($template, $params=array(), $dir=null);
+    public function render(string $template, array $params=[], string $namespace = ''): string;
     
     /**
      * Возвращает окончание файлов шаблонов и темплейтов
@@ -44,13 +44,7 @@ interface ViewInterface {
      * @return string;
      */
     public function getLang();
-    
-    /**
-     * Устанавливает окончание файлов шаблонов и темплейтов
-     * @param string $ext
-     * @return \ViewInterface
-     */
-    public function setExtension($ext);    
+        
     /**
      * Устанавливает Шаблон страницы
      * @param string $name
@@ -70,21 +64,14 @@ interface ViewInterface {
      * @param string $lang
      * @return \ViewInterface
      */
-    public function setLang($lang);
-    
-    /**
-     * Устанавливает путь к директории с шаблонами
-     * @param string $path
-     * @return \ViewInterface
-     */
-    public function setLayoutPath($path);
+    public function setLang($lang);       
     
     /**
      * Устанавливает путь к директории с темплейтами
      * @param string $path
      * @return \ViewInterface
      */
-    public function addTemplatePath($path);
+    public function addTemplatePath($path, $namespace = '');
     
     
 }

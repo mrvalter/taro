@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        {% block head %}
+            <meta charset="utf-8" />
+            <title>{% block title %}{% endblock %}</title>
+            <script src="/media/bower_components/jquery/dist/jquery.min.js"></script>
+        {% endblock %}
+    </head> 
+    <body>
+        <header></header>
+        <main>
+        {% block content %}{% endblock %}
+        </main>
+        
+        <footer>
+            
+        </footer>
+    
+    </body>
+</html>	
+
+

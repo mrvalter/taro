@@ -13,7 +13,7 @@ use Kernel\Services\FileDataStorage;
  */
 class TwigViewer implements ViewInterface {
 	
-	const templateExtension = '.html';
+	const templateExtension = '.html.twig';
 	/** @var Twig_Environment */
 	private $twig;
 	private $cachePath;

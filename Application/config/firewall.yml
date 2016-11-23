@@ -1,0 +1,21 @@
+public_urls:
+    - /firewall/message
+    - '~^\/share(?=\\/|$)~ui'
+
+# Подключаемые бандлы
+required_bundles:
+    swar: Swar_Bundle
+    share: Share_Bundle
+    firewall: Firewall_Bundle
+
+#бандл главной страницы (bundle/IndexController->indexAction())
+main_page_bundle: share
+
+#Назначаем отображение определенных страниц на коды Ответов
+# Если будет Ответ содержит код, не прописанный ниже или страницы не существует, 
+# вернется стандартный Response  с кодом
+
+system_responses:
+    401: /share/firewall/authorize
+    403: /share/firewall/accessdenied
+    404: /firewall/message/notfound

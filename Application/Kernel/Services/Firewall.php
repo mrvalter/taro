@@ -59,7 +59,7 @@ class Firewall implements FirewallInterface{
         
 		$this->requireBundles = $this->getRequireBundlesFromConfig($config, $classLoader, $bundlesPath);
 		$this->publicUrls = $this->getPublicUrlsFromConfig($config);						
-        $mainPageBundle   = $config->getValue('firewall', 'main_page_bundle');
+        $mainPageBundle   = $config->getValue('main_page_bundle');
         $this->mainPageBundle = $mainPageBundle && isset($this->requireBundles[strtolower($mainPageBundle)])?
             $this->requireBundles[strtolower($mainPageBundle)] :
             null;
@@ -67,7 +67,7 @@ class Firewall implements FirewallInterface{
         $this->security = $security;
         $this->bundlesPath = $bundlesPath;
         $this->xdebugLoaded = extension_loaded('xdebug');
-		$this->systemResponses = $config->getValue('firewall', 'system_responses');
+		$this->systemResponses = $config->getValue('system_responses');
     }        
     	
     /**
@@ -125,7 +125,7 @@ class Firewall implements FirewallInterface{
 	
 	public function getExceptionResponse(\Exception $exception)
     {                        
-        var_dump($exception->getMessage());
+        var_dump($exception);
         return new Response(503);
         
         if(in_array($this->errorReporting, [E_ALL, E_ERROR] )){
@@ -212,18 +212,18 @@ class Firewall implements FirewallInterface{
 	 * @param Config $config
 	 * @param object $classLoader
 	 * @return array
-	 * @throws \ConfigException
+	 * @throws \FirewallException
 	 */
 	private function getRequireBundlesFromConfig(Config $config, $classLoader, $bundlesPath)
-	{
+	{		
 		$returnRequireBundles = [];		
-		$requiredbundles = $config->getValue('firewall', 'required_bundles');        
+		$requiredbundles = $config->getValue('required_bundles');
         if(null !== $requiredbundles && sizeof($requiredbundles)){
             foreach($requiredbundles as $name=>$bundle){
                 $bundle = trim($bundle);
                 $name = trim($name);
                 if(!$bundle || !$name){
-                    throw new \ConfigException('Requires Bundles has emprty rows');
+                    throw new \FirewallException('Requires Bundles has emprty rows');
                 }
                 $returnRequireBundles[strtolower($name)] = $bundle;
                 $classLoader->add($bundle, $bundlesPath);

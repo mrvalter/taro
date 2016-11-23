@@ -1,0 +1,40 @@
+## YAML Template.
+##'authenticator'   => [
+##    'class'  => 'Services\\Security\\Authentication\\LdapAuthenticator',
+##    'params' => ['@user_repository', '@ldap']
+##    ],*/
+
+## %App%     - Путь от корня до папки Application
+## %Bundles% - Путь от корня до папки с бандлами
+
+cache_dir: %App%/cache
+admin_mails: ['fedyakinas@master']
+
+services:
+  config: Kernel
+  router: Kernel
+  autoloader: Kernel
+  
+  session_storage:
+    class: Kernel\Services\Security\SessionStorage\NativeSessionStorage
+        
+  user_repository:
+    class: 'Classes\UserRepository'
+
+  authenticator:
+    class: Kernel\Services\Security\Authentication\DbAuthenticator
+    params: ['@user_repository']
+
+  authenticatorLdap:
+    class: Kernel\Services\Security\Authentication\LdapAuthenticator
+    params: ['@user_repository']
+        
+  security:
+    class:  Kernel\Services\Security\Security
+    params: ['@authenticator', '@user_repository', '@session_storage']
+  
+  viewer:
+    class: Kernel\Services\Viewer\TwigViewer,
+    params:
+     - %App%/cache/kernel/twig
+     - %App%/layouts

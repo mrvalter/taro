@@ -16,8 +16,8 @@ return [
     'cache_dir'         => '/MatMedV2_cache',	
 
     'user_image_path'   => [
-        'moscow' => '/mnt/E-Office/usersphoto/Moscow',
-        'chel'   => '/mnt/E-Office/usersphoto/Chel',
+        'moscow'        => '/mnt/E-Office/usersphoto/Moscow',
+        'chel'          => '/mnt/E-Office/usersphoto/Chel',
     ],
     
     'admin_mails' => [
@@ -88,3 +88,23 @@ return [
 		]
 	]		       
 ];
+
+?>
+
+<root>
+<services>
+	<service name="viewer" class="Kernel\Services\Viewer\TwigViewer">
+		<params>
+			<param name="cachePath" value="%AppPath%/cache/kernel/twig"/>
+			<param name="layoutsPath" value="%AppPath%/layouts"/>
+		</params>
+	</service>
+	
+	<service name="db" class="Kernel\Services\DB">
+		<params>			
+			<param></param>
+		</params>
+	</service>
+	
+</services>
+</root>

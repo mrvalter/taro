@@ -1,9 +1,7 @@
 <?php
 namespace Kernel\Services\Viewer;
+
 use Kernel\Interfaces\ViewInterface;
-use Twig_Environment;
-use Twig_Loader_Filesystem;
-use Twig_Autoloader;
 use Kernel\Services\FileDataStorage;
 
 /**
@@ -21,10 +19,11 @@ class TwigViewer implements ViewInterface {
 	public function __construct(string $cachePath='', string $layoutsPath='')
 	{
 		$this->cachePath = $this->createCacheDir($cachePath);
-		Twig_Autoloader::register();
-		$loader = new Twig_Loader_Filesystem();
 		
-		$this->twig = new Twig_Environment($loader, [
+		\Twig_Autoloader::register();
+		$loader = new \Twig_Loader_Filesystem();
+		
+		$this->twig = new \Twig_Environment($loader, [
 			'cache'=>$this->cachePath
 		]);
 		
@@ -35,6 +34,7 @@ class TwigViewer implements ViewInterface {
 			
 			$this->addTemplatePath($layoutsPath, 'layouts');
 		}
+		var_dump($this);
 	}
 	
 	public function getFileExtension(): string

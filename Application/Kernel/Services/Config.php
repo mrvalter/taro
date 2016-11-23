@@ -1,9 +1,11 @@
 <?php
 /**
  * @autor Fedyakin Alexander
- * @copyright (c) 2015, Materia Medica Group
  */
+
 namespace Kernel\Services;
+
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Класс конфигурации приложения
@@ -23,35 +25,31 @@ class Config {
 
     /**
      * 
-     * @param string $enviroment           Переменная окружения (prod | dev | ...)
-     * @param string $pathToMainConfigDir  Папка с основным конфигом
+     * @param string $enviroment  Переменная окружения (prod | dev | ...)
+     * @param array $config       Массив конфигурации
+	 * @param array $tags         Теги для замены в конфигурационном файле
      */
-    public function __construct($enviroment='', array $array=[])
-    {        
+    public function __construct(array $config=[], string $enviroment = '', array $tags = [])
+    {       
+		
+		$this->tags = $tags;
         $this->enviroment = $enviroment;
-        $this->tags = [
-            '<?php' => '',
-            '<?'    => '',            
-            '?>'    => '',
-        ];
-        
-        $this->config = $array;
+		$this->config = $config;		
     }
     
     /**
-     * Возвращает объект конфига построенным снужным ключом (клон)
+     * Возвращает объект конфига построенный с нужным ключом
      * @param string $conf Ключ массива конфигурации
-     * @return Config
+     * @return self
      */			
-    public function get(string $conf='')
+    public function get(string $conf=''): self
     { 	
-        if($conf){
-            $configArr = isset($this->config[$conf])? [$conf => $this->config[$conf]] : [];
-        }else{
-            return clone $this;
+		
+        if(!$conf){
+            return $this;
         }
         
-        return new Config ($this->enviroment, $configArr);
+		return isset($this->config[$conf])? new Config($this->config[$conf]) : new Config();		
     }
     
     /**
@@ -79,10 +77,10 @@ class Config {
     
     
     /**
-     *  Возвращает  теги для замены
+     * Возвращает  теги для замены
      * @return array
      */
-    public function getTags()
+    public function getTags(): array
     {
         return $this->tags;
     }
@@ -96,87 +94,55 @@ class Config {
      * @return \Services\Config
      */
 	
-    public function addFile($file, $key='', bool $required=true)
+    public function addFile($file, bool $required = true, string $key = ''): self
     {	
         
-        $fileExist = file_exists($file);
-        $config = [];            
+        $fileExist = file_exists($file);                  
 
         if(!$fileExist && $required){
             throw new \ConfigException('Не найден файл конфига '.$fileName, $file);
         }                
-        
+        		
         if($key && !isset($this->config[$key])){
             $this->config[$key] = [];
         }                        
         
-        if($fileExist){
-            if($key){
-                $exConfig = &$this->config[$key];
-            }else{
-                $exConfig = &$this->config;
-            }
-            
-            $configStr = file_get_contents($file);            
-            $config = eval($this->replaceTags($configStr));            
-                          
-            $exConfig = array_replace_recursive(
-                $exConfig,
-                $config
-            );            
-        }
-        
-        return $this;
-        
-    }                     				    		
-    
-    
-    public function addDir($path, array $requiredNames=[])
-    {
-        if(!file_exists($path)){
-            throw new \ConfigException('config\'s dir path not found', 'dir path: '.$path);
-        }
-        
-        $files = [
-            'config',
-            'config_'.$this->enviroment
-        ];
-        
-        foreach($files as $fileName){
-            $file = $path.'/'.$fileName.'.'.self::CONFIG_EXTENSION;
-            $this->addFile($file, '', in_array($fileName, $requiredNames));
-        }
-        
-        return $this;
-        
-    }
-    
-    /**
-     * 
-     * @param array $tags
-     * @return \Services\Config
-     */
-    public function addTags(array $tags=[])
-    {
-            $this->tags = array_merge($this->tags, $tags);
-            return $this;
-    }	   
+        if(!$fileExist){
+			return $this;
+		}
+				
+		try {
+			$content = file_get_contents($file);
+			$config = Yaml::parse($this->replaceTags($content));
+		} catch (\Exception $ex) {
+			throw new \ConfigException( $ex->getMessage() );
+		}
+		
+		if($key){
+			$exConfig = &$this->config[$key];
+		}else{
+			$exConfig = &$this->config;
+		}                                    
 
-    /**
-     * 
-     * @param type $config
-     * @return \Services\Config
-     */
-    private function replaceTags(&$configStr)
-    {		            		
-        if(!sizeof($this->tags)){
-            return $configStr;
-        }
+		$exConfig = array_replace_recursive($exConfig, $config);
         
-        $keys = array_keys($this->tags);        
-        $values = array_values($this->tags);
-
-        return str_replace($keys, $values, $configStr);                
-    }
+        return $this;        
+    }	
 	
+	/**
+	 * Производит замену тегов и возвращает отформатированный текст
+	 * @param string $content
+	 * @return string 
+	 */
+	private function replaceTags(string &$content): string
+	{		
+		
+		if(!sizeof($this->tags)){
+			return $content;
+		}
+		
+		$keys   = array_keys($this->tags);
+		$values = array_values($this->tags);				
+		return $content = str_replace($keys, $values, $content);
+	}
 }

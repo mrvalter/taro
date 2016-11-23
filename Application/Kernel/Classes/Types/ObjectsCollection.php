@@ -5,9 +5,7 @@ namespace Kernel\Classes\Types;
  * Коллекция объектов одного класса
  */
 
-class ObjectCollection extends Collection{			
-	
-	private $class = '';
+class ObjectsCollection extends Collection {					
 	
 	public function __construct(array $objects=[])
 	{
@@ -27,15 +25,7 @@ class ObjectCollection extends Collection{
 	{
 		if(!is_object($object)){
 			return $this;
-		}
-		
-		if(!$this->class){
-			$this->class = get_class($object);
-		}
-		
-		if($this->class !== get_class($object)){
-			return $this;
-		}
+		}				
 		
 		$this->rows[] = $object;
 	}
@@ -46,7 +36,7 @@ class ObjectCollection extends Collection{
 	 * @param mixed $value
 	 * @return array
 	 */
-	public function getObjectsByPropertyValue(string $property, $value): array
+	public function getObjectsByPropertyValue(string $property, $value): ObjectsCollection
 	{
 		$return = [];
 		
@@ -58,7 +48,7 @@ class ObjectCollection extends Collection{
 			}
 		}
 		
-		return new ObjectCollection($return);
+		return new ObjectsCollection($return);
 	}
 	
 	/**

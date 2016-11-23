@@ -26,13 +26,7 @@ class Router {
 	private static $serviceContainer = null;
     
     /** @var string */
-    private $bundle;
-    
-    /** @var string */
-    private $controller;
-    
-    /** @var string */
-    private $action;                   
+    private $bundle;        
 	
     /** @var RequestInterface */
     private $request;
@@ -239,38 +233,7 @@ class Router {
     {
         
         return $this->response;
-    }
-	
-    /**
-     * Возвращает имя бандла как в URL
-     * @return string
-     */
-    public function getBundle(): string
-    {
-        
-        return $this->bundle;
-    }                               
-	
-    /**
-     * Возвращает название контроллера без постфикса
-     * @return string
-     */
-    public function getController(): string
-    {
-        
-        return $this->controller;
-    }
-        
-    /**
-     * Возвращает название акшена без постфикса
-     * @return string
-     */
-    public function getAction(): string
-    {
-        
-        return $this->action;
-    }            					                       
-
+    }	                                   	                					                       
     
     /**
      * 
@@ -331,37 +294,8 @@ class Router {
      */
     public function createRedirect(RedirectManager $redirectManager)
     {
-            $this->redirectManager = $redirectManager;
-            $uriPath = $this->request->getRequestUrl();				
-            $redirectArr = $this->redirectManager->getRedirectFromRoute($uriPath);
-
-            if(null !== $redirectArr){			
-                    $this->bundle         = $redirectArr[0];
-                    $this->controller = ucfirst($redirectArr[1]);
-                    $this->action     = strtolower($redirectArr[2]);			
-            }
-
-            return $this;
-    }   
-	
-    /**
-     * 
-     * @param string $uri
-     * @param string $method
-     * @param array $headers
-     * @param string $version
-     * @return \Services\Router
-     */
-    public static function createFromParams($uri, $method='get', $body=null, $headers=[], $version='1.1')
-    {
-           /* if(!preg_match('~^(https?:\/\/)?([\w\.]+)\.([a-z]{2,6}\.?)(\/[\w\.]*)*\/?$~', $uri, $result))
-            {
-                    $uri = 'https://'.$_SERVER['HTTP_HOST'].$uri;
-            }
-
-            $request = new HttpFound\Request($method, $uri, $headers, $body, $version);
-            return new Router($request);*/
-    }
+           
+    }   	    
 	
     /**
      * Создает роутер из серверных переменных запроса

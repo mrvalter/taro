@@ -17,7 +17,7 @@ class ServiceContainer {
      * @param Config $config 
      * 
      */
-    public function __construct(array $config=[])
+    public function __construct(Config $config = null)
     {
         $this->config = $config;
     }
@@ -38,17 +38,13 @@ class ServiceContainer {
      * @return object  Возвращает объект сервиса
      */
     public function get($name)
-    {        
+    {
+		
         if(!sizeof($this->config)){
             throw new ServiceException('Не загружено ни одного сервиса в конфигурационный файл');
         }
-        		
-        if(isset($this->services[$name])){            
-            return $this->services[$name];
-        }
         
-		return $this->initService($name);
-						
+		return $this->services[$name] ?? $this->initService($name);        						
     }	
     
     /**
@@ -59,14 +55,8 @@ class ServiceContainer {
      * @param array $services Имена вызывающих сервисов
      * @throws \ServiceException
      */
-    private function initService($name, &$services=array())
-    {      
-
-		
-        if($name == 'config'){
-            var_dump($this->services);
-        }
-
+    private function initService(string $name, array &$services = [])
+    {		
         if(isset($this->services[$name])){
             return $this->services[$name];
         }
@@ -74,24 +64,23 @@ class ServiceContainer {
         if(!isset($this->config[$name])){
             throw new \ServiceException('Не найдено сервиса "'.$name.'" в конфигурационном файле');
         }
-             
-        
-        if(!sizeof($services)){
+                
+        if(isset($services[0])){
             $key = array_search($name, $services);
             if(false !== $key){
                 throw new \ServiceException('Сервисы "'.$name.'" и "'.$services[$key].'" ссылаются друг на друга');
             }
         }
         
-        $class = isset($this->config[$name]['class']) ? $this->config[$name]['class'] : '';
-        $params = isset($this->config[$name]['params']) ? $this->config[$name]['params'] : array();
+        $class = $this->config[$name]['class'] ?? '';
+        $params = $this->config[$name]['params'] ?? [];
         
 		if(!$class){
-                    throw new \ServiceException('Не найден сервис "'.$name.'" в конфиге приложения');
+			throw new \ServiceException('Не найден сервис "'.$name.'" в конфиге приложения');
 		}
 		
         if(!sizeof($params)){
-            return $this->services[$name] = new $class();             
+            return $this->services[$name] = new $class();
         }
                 
         /* Загружаем все нужные сервисы */

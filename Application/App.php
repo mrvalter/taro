@@ -7,7 +7,6 @@ include_once 'functions.php';
 
 use Composer\Autoload\ClassLoader as ClassLoader;
 use Kernel\Services\{Config, Router, Firewall};
-use Kernel\Services\HttpFound\Response;
 
 /**
  * Front Controller (Singleton)
@@ -228,13 +227,13 @@ class App {
         try {                                   
             
             /* Инициализируем сервис конфига */                 
-            $config = new Config($this->getEnv());
-			$config->addTags([
-				'%AppPath%' => $this->getAppPath()				
-			]);
-            $config->addDir($this->mainConfigPath, ['config'])
-                    ->addFile($this->mainConfigPath.'/firewall.php', 'firewall', true);
-            
+            $config = new Config([], $this->getEnv(),['%App%' => $this->getAppPath()]);
+			$config->addFile($this->mainConfigPath.'/config.yml', true);
+			if($this->env){
+				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
+			}
+			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');
+			
             /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->getValue('services'));
             $this->ServiceContainer->addService('config', $config);

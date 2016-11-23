@@ -5,9 +5,9 @@ class Collection implements \Iterator{
 	
 	protected $rows=[];
 	
-	public function __construct(array $objects)
+	public function __construct(array $rows=[])
 	{		
-		$this->rows = $selected;
+		$this->rows = $rows;
 	}								
 	
 	public function push($row)

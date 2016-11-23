@@ -7,6 +7,7 @@ include_once 'functions.php';
 
 use Composer\Autoload\ClassLoader as ClassLoader;
 use Kernel\Services\{Config, Router, Firewall};
+use Kernel\ServiceContainer;
 
 /**
  * Front Controller (Singleton)

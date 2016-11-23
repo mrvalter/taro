@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__.'/ServiceContainer.php';
-
 $loader = require_once __DIR__.'/vendor/autoload.php';
 $loader->add('Kernel\\', __DIR__);
 $loader->add('Services\\', __DIR__);

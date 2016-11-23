@@ -1,21 +1,18 @@
 <?php
+namespace Kernel;
 
-/**
- * @autor Fedyakin Alexander
- * @copyright (c) 2015, Materia Medica Group
- */
+use Kernel\Services\Config;
 
-/**
- * @category MED CRM
- */
 class ServiceContainer {
     
+	/** @var array */
     private $services;
+	
+	/** @var Config */
     private $config;    
     
     /**
      * @param Config $config 
-     * 
      */
     public function __construct(Config $config = null)
     {
@@ -61,9 +58,10 @@ class ServiceContainer {
             return $this->services[$name];
         }
         
-        if(!isset($this->config[$name])){
+        if(null === $this->config>getValue($name)){
             throw new \ServiceException('Не найдено сервиса "'.$name.'" в конфигурационном файле');
         }
+		
                 
         if(isset($services[0])){
             $key = array_search($name, $services);
@@ -72,8 +70,8 @@ class ServiceContainer {
             }
         }
         
-        $class = $this->config[$name]['class'] ?? '';
-        $params = $this->config[$name]['params'] ?? [];
+        $class = $this->config->getValue($name, 'class') ?? '';
+        $params = $this->config->getValue($name, 'params') ?? [];
         
 		if(!$class){
 			throw new \ServiceException('Не найден сервис "'.$name.'" в конфиге приложения');

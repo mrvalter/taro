@@ -58,7 +58,7 @@ class ObjectCollection extends Collection{
 			}
 		}
 		
-		return $return;
+		return new ObjectCollection($return);
 	}
 	
 	/**

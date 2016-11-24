@@ -1,0 +1,27 @@
+<?php
+
+namespace Kernel\Services;
+
+{% for service in services %}
+use {{service.class}};
+{% endfor %}
+
+class ServiceContainer {
+
+
+    public function __construct()
+    {
+
+    }
+{% for name, service in services %}
+    
+    public function get{{name}}()
+    {
+    
+    }
+    
+{% endfor %}
+
+}
+
+

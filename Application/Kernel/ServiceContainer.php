@@ -9,7 +9,7 @@ class ServiceContainer {
     private $services;
 	
 	/** @var Config */
-    private $config;    
+    private $config;  
     
     /**
      * @param Config $config 

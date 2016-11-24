@@ -11,9 +11,9 @@ cache_dir: %App%/cache
 admin_mails: ['fedyakinas@master']
 
 services:
-  config: Kernel
-  router: Kernel
-  autoloader: Kernel
+#  config: Kernel
+#  router: Kernel
+#  autoloader: Kernel
   
   session_storage:
     class: Kernel\Services\Security\SessionStorage\NativeSessionStorage

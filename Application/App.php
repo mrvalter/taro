@@ -221,8 +221,7 @@ class App {
      * @return string HTML 
      */
     private function initApplication()
-    {
-                        
+    {           		
         ob_start();
                 
         try {                                   
@@ -234,6 +233,10 @@ class App {
 				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
 			}
 			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');
+			
+			$creator = new \Kernel\Services\ServiceContainer\ServiceContainerCreator($config->get('services'));
+			$creator->createServicesClass();
+			die();
 			
             /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->getValue('services'));

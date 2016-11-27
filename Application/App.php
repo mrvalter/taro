@@ -7,7 +7,7 @@ include_once 'functions.php';
 
 use Composer\Autoload\ClassLoader as ClassLoader;
 use Kernel\Services\{Config, Router, Firewall};
-use Kernel\ServiceContainer;
+
 
 /**
  * Front Controller (Singleton)
@@ -232,14 +232,10 @@ class App {
 			if($this->env){
 				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
 			}
-			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');
-			
-			$creator = new \Kernel\Services\ServiceContainer\ServiceContainerCreator($config->get('services'));
-			$creator->createServicesClass();
-			die();
+			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');						
 			
             /* Подгружаем сервисы */
-            $this->ServiceContainer = new ServiceContainer($config->getValue('services'));
+            $this->ServiceContainer = new ServiceContainer($config->get('services'));
             $this->ServiceContainer->addService('config', $config);
             
             $this->ServiceContainer->get('session_storage')->start();
@@ -256,6 +252,7 @@ class App {
                 echo 'Системная ошибка !<br />';			
                 echo $e->getMessage().'<br />';
                 $e->getTraceAsString().'<br />';
+				var_dump($e->getTrace());
                 die();
         }/*catch(\Throwable $e){
 			var_dump($e);

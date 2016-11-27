@@ -1,4 +1,6 @@
 <?php
+
+
 $loader = require_once __DIR__.'/vendor/autoload.php';
 $loader->add('Kernel\\', __DIR__);
 $loader->add('Services\\', __DIR__);
@@ -15,5 +17,7 @@ $twLoader = new Twig_Loader_Filesystem( __DIR__.'/layouts');
 $twig = new Twig_Environment($twLoader, array(
     'cache' => __DIR__.'/cache/Twig',
 ));*/
+
+require_once __DIR__.'/ServiceContainer.php';
 
 return $loader;

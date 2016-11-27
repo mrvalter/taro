@@ -19,7 +19,7 @@ services:
     class: Kernel\Services\Security\SessionStorage\NativeSessionStorage
         
   user_repository:
-    class: 'Classes\UserRepository'
+    class: Classes\UserRepository
 
   authenticator:
     class: Kernel\Services\Security\Authentication\DbAuthenticator
@@ -34,7 +34,10 @@ services:
     params: ['@authenticator', '@user_repository', '@session_storage']
   
   viewer:
-    class: Kernel\Services\Viewer\TwigViewer,
+    class: Kernel\Services\Viewer\TwigViewer
     params:
      - %App%/cache/kernel/twig
      - %App%/layouts
+    methods:
+        - methodName: [param1, param2]
+        - mehtod2:    [param1, param2]    

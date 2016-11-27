@@ -3,7 +3,7 @@ namespace Kernel\Services\Router;
 
 use Kernel\Interfaces\RouteInterface;
 use Kernel\Services\HttpFound\Response;
-use Kernel\Classes\Types\ObjectCollection;
+use Kernel\Classes\Types\ObjectsCollection;
 
 abstract class Route implements RouteInterface {		
 	
@@ -14,7 +14,7 @@ abstract class Route implements RouteInterface {
 	
 	public function __construct()
 	{
-		$this->subRoutes = new ObjectCollection();
+		$this->subRoutes = new ObjectsCollection();
 		$this->response = new Response();
 	}
 	

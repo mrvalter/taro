@@ -33,8 +33,7 @@ class TwigViewer implements ViewInterface {
 			}
 			
 			$this->addTemplatePath($layoutsPath, 'layouts');
-		}
-		var_dump($this);
+		}		
 	}
 	
 	public function getFileExtension(): string

@@ -99,6 +99,7 @@ class LocalRoute extends Route{
 			$params = array_slice($params, 1);			
 		}
 		
+		
 		$refMethod = $refController->getMethod($actionMethod);				
 		$callableParams = $this->getCallableParams($refMethod, $params);
 				

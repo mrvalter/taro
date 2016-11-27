@@ -33,10 +33,17 @@ class Config {
     {       
 		
 		$this->tags = $tags;
-        $this->enviroment = $enviroment;
-		$this->config = $config;		
+        $this->enviroment = $enviroment;		
+		array_walk_recursive($config, [$this,'replaceTagsInArray']);
+		$this->config = $config;
+		
     }
     
+	public function getEnviroment(): string
+	{
+		
+		return $this->enviroment;
+	}
     /**
      * Возвращает объект конфига построенный с нужным ключом
      * @param string $conf Ключ массива конфигурации
@@ -48,8 +55,13 @@ class Config {
         if(!$conf){
             return $this;
         }
-        
-		return isset($this->config[$conf])? new Config($this->config[$conf]) : new Config();		
+		
+		$value = [];
+        if(isset($this->config[$conf])){
+			$value = is_array($this->config[$conf]) ? $this->config[$conf] : [$this->config[$conf]];
+		}
+		
+		return new Config($value);
     }
     
     /**
@@ -83,8 +95,8 @@ class Config {
     public function getTags(): array
     {
         return $this->tags;
-    }
-    
+    }    		
+	
     /**
      * Добавляет конфиг по имени файла или имени папки с конфигами
      * @param string $file Путь до файла
@@ -92,8 +104,7 @@ class Config {
      * @param boolean $required Вызывыть исключение, если файла нет. По умолчанию TRUE
      * @throws \ConfigException
      * @return \Services\Config
-     */
-	
+     */		
     public function addFile($file, bool $required = true, string $key = ''): self
     {	
         
@@ -145,4 +156,16 @@ class Config {
 		$values = array_values($this->tags);				
 		return $content = str_replace($keys, $values, $content);
 	}
+	
+	private function replaceTagsInArray(&$item, $key)
+	{
+		if(empty($this->tags)){
+			return;
+		}
+		
+		$keys   = array_keys($this->tags);
+		$values = array_values($this->tags);				
+		$item = str_replace($keys, $values, $item);
+	}
+	
 }

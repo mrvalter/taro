@@ -1,27 +1,20 @@
 <?php
 
 namespace Kernel\Services;
-
-{% for service in services %}
-use {{service.class}};
+use Kernel\Services\ServiceContainerReal;
+{% for class in classes %}
+use {{class}};
 {% endfor %}
 
-class ServiceContainer {
-
-
-    public function __construct()
-    {
-
-    }
+class ServiceContainer extends ServiceContainerReal {
+      
 {% for name, service in services %}
     
-    public function get{{name}}()
+    public function {{name}}(): {{service._shortNameClass}}
     {
-    
+        return $this->getService('{{name}}');
     }
     
 {% endfor %}
-
+        
 }
-
-

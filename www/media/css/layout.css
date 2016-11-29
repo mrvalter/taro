@@ -1,0 +1,27 @@
+/* line 1, ../sass/layout.scss */
+html {
+  height: 101%;
+}
+
+/* line 4, ../sass/layout.scss */
+body {
+  height: 100%;
+}
+
+/* line 7, ../sass/layout.scss */
+#wrapper {
+  min-height: 100%;
+  height: auto;
+  margin: -50px auto 0;
+}
+
+/* line 12, ../sass/layout.scss */
+#header {
+  padding-top: 50px;
+}
+
+/* line 15, ../sass/layout.scss */
+#footer {
+  height: 50px;
+  margin: 0 auto;
+}

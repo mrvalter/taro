@@ -1,6 +1,11 @@
 {% extends "@layouts/default.layout.html.twig" %}
-
 {% block title %}Index{% endblock %}
+
+
+{% block pagetitle %}
+    <h2>Index</h2>
+    sdsds/sdsdsd/sdsdsd
+{% endblock %}
 
 {% block head %}
     {{ parent() }}
@@ -11,8 +16,12 @@
 
 
 {% block content %}
-    <h1>Index</h1>
-    <p class="important">
-        Welcome on my awesome homepage.
-    </p>
+    <div class="row-block border-bottom">        
+        <p class="important">
+            Welcome on my awesome homepage.
+        </p>
+        <p>
+            Welcome on my awesome homepage.
+        </p>
+    </div>
 {% endblock %}

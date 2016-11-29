@@ -1,0 +1,97 @@
+/* Welcome to Compass.
+ * In this file you should write your main styles. (or centralize your imports)
+ * Import this file using the following HTML or equivalent:
+ * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
+
+@import "compass/reset";
+
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700");
+@import url("https://fonts.googleapis.com/css?family=Roboto:400,300,500,700");
+
+/*@import "layout";*/
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 100;
+}
+h1 {
+  font-size: 30px;
+}
+h2 {
+  font-size: 24px;
+}
+h3 {
+  font-size: 16px;
+}
+h4 {
+  font-size: 14px;
+}
+h5 {
+  font-size: 12px;
+}
+h6 {
+  font-size: 10px;
+}
+h3,
+h4,
+h5 {
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #2f4050;
+}
+#left-menu {
+    position: absolute;
+    width: 220px;
+    min-height: 100%;
+    background-color: #2f4050;
+}
+.page-wrapper {
+    min-height: 100%;    
+    margin: 0 0 -50px 220px;
+    background-color: #f3f3f4;
+}
+
+header{
+    height: 60px;
+    background: #f3f3f4;
+}
+* html .page-wrapper {
+    height: 100%;
+}
+.page-buffer {
+    height: 50px;
+}
+
+.page-footer {
+    height: 50px;    
+    background: none repeat scroll 0 0 white;
+    border-top: 1px solid #e7eaec;
+    padding: 10px 20px;
+}
+
+.wrapper-content {
+    padding: 20px 10px 40px;
+}
+.row-block{
+    padding: 20px 20px 20px 20px;
+    background-color: #ffffff;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #e7eaec;
+}
+
+.page-title{
+    border-top: 0;
+    padding: 0 10px 20px 10px;
+}

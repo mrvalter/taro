@@ -111,6 +111,12 @@ class Response implements ResponseInterface
         $this->protocol = $version;
     }
 
+	public function __toString() {
+		
+		header("HTTP/{$this->protocol} {$this->getStatusCode()} {$this->getReasonPhrase()}");		
+		return (string)$this->stream;
+	}
+	
     public function getStatusCode()
     {
         return $this->statusCode;

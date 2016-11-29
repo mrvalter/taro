@@ -1,27 +1,34 @@
 <!DOCTYPE html>
 <html>
-    <head>
+    <head>        
         {% block head %}
         <meta charset="utf-8" />
         <title>{% block title %}{% endblock %}</title>
         <script src="/media/bower/jquery/dist/jquery.min.js"></script>
         <script src="/media/bower/bootstrap/dist/js/bootstrap.min.js"></script>
+        <link href="/media/bower/components-font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/media/bower/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/media/css/screen.css" rel="stylesheet" type="text/css"/>
         {% endblock %}
     </head> 
-    <body>
-        <header>
+   <body>
+       <menu id="left-menu">
+           
+       </menu>
+        <div class="page-wrapper">
+            <header></header>
+            <div class="row-block page-title">{% block pagetitle %}{% endblock %}</div>
+            <div class="wrapper-content">
+                {% block content %}{% endblock %}
+            </div>
             
-        </header>
-        <menu></menu>
-        <main>
-        {% block content %}{% endblock %}
-        </main>
-        
-        <footer>
-            
-        </footer>
-    
-    </body>
+            <div class="page-buffer"></div>
+        </div>
+       
+        <div class="page-footer">
+asdasdasdasd
+        </div>
+</body>
 </html>	
 
 

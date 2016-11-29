@@ -14,7 +14,6 @@ main_page_bundle: share
 #Назначаем отображение определенных страниц на коды Ответов
 # Если будет Ответ содержит код, не прописанный ниже или страницы не существует, 
 # вернется стандартный Response  с кодом
-
 system_responses:
     401: /share/firewall/authorize
     403: /share/firewall/accessdenied

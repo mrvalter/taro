@@ -105,9 +105,9 @@ class LocalRoute extends Route{
 				
 		$oController = new $controllerClass($this->serviceContainer, $this->request);
 		
-		$body = $refMethod->invokeArgs($oController, $callableParams);
-		echo $body.'<br /><br /><br />';
-		return new Response();
+		$html = $refMethod->invokeArgs($oController, $callableParams);
+		
+		return new Response(200, [], $html);
 	}
 	
 	private function getCallableParams(\ReflectionMethod $refMethod, array $urlParams=[]): array
@@ -141,10 +141,14 @@ class LocalRoute extends Route{
 	}
 	
 	private function getSystemResponse($code, $path = '', $message='', $systemMessage='')
-	{				
+	{	
+		
 		$this->response = $this->response->withStatus($code, $message, $systemMessage);
-				
-		if($this->isSystemResponce || !$path || preg_match('~\.[^\/]*$~',$this->uri->getPath())){
+		
+		if(preg_match('~\.[^\/]*$~',$this->uri->getPath())){
+			return $this->response->withStatus(404, 'FILE NOT FOUND');
+		}
+		if($this->isSystemResponce || !$path){
 			return $this->response;
 		}
 		

@@ -61,10 +61,7 @@ class Router {
 		
 		
         $this->request = $request;
-        $this->response = new Response();        		
-
-		$this->route = $this->createRoute($request);
-		
+        $this->response = new Response();		
     }                   
 	
     /**
@@ -85,6 +82,7 @@ class Router {
 	{
 		$uri = $request->getUri();
 		$host = $uri->getHost();
+		
 		
         if($host !== 'localhost' && $host !== $_SERVER['HTTP_HOST']){
             return new CurlRoute();
@@ -194,8 +192,9 @@ class Router {
      * @TODO CurlRequest
      */
     public function sendRequest(): Response
-    {        
-        return $this->route->execute();       
+    {   
+		
+		return $this->routes[] = $this->createRoute($this->request)->execute();				
     }            	   
     
     /**

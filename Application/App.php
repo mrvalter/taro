@@ -191,14 +191,15 @@ class App {
             ->initApplication();            
 		
         try {
-            $responce = $App->runHttpApplication();			
+            $response = $App->runHttpApplication();			
         }catch (\Exception $e){
-            $responce =$App->getService('firewall')->getExceptionResponse($e);
+            $response =$App->getService('firewall')->getExceptionResponse($e);
         }
 	
+		echo $response;
+		
         $time = microtime(true) - $startTime;
-        printf('Скрипт выполнялся %.4F сек.', $time);
-        var_dump($responce);
+        echo '<script>console.log("'.sprintf('Скрипт выполнялся %.4F сек.', $time).'");</script>';        
         
         exit();
     }

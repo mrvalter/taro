@@ -136,10 +136,6 @@ class ServicesTest extends TestCase{
 		$object2 = $service->get('service2');
 		$this->assertEquals(true, $object===$object2);
 		
-	}
-	
-	
-	
-						
+	}						
 	
 }

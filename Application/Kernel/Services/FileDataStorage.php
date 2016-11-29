@@ -84,10 +84,26 @@ class FileDataStorage {
 		
 		if ($objs = glob($dir."/*")) {
 			foreach($objs as $obj) {
-				is_dir($obj) ? self::removeDirectory($obj) : unlink($obj);
+				is_link($obj) || !is_dir($obj) ? unlink($obj) : self::removeDirectory($obj);
 			}
 		}
 		return rmdir($dir);		
+	}
+	
+	public static function touch($file, $data='')
+	{		
+		self::makeDir(dirname($file));
+		
+		$fp = fopen($file, 'w');
+		if($fp){
+			fwrite($fp, $data);
+			fclose($fp);
+		}
+	}
+	
+	public static function read($file)
+	{
+		return file_get_contents($file);
 	}
 		
 }

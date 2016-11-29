@@ -1,50 +1,87 @@
 <?php
 
-use Kernel\Services\ServiceContainerReal;
-use Kernel\Services\Security\SessionStorage\NativeSessionStorage;
-use Classes\UserRepository;
-use Kernel\Services\Security\Authentication\DbAuthenticator;
-use Kernel\Services\Security\Authentication\LdapAuthenticator;
-use Kernel\Services\Security\Security;
-use Kernel\Services\Viewer\TwigViewer;
+use Kernel\Services\Config;
+use Kernel\Interfaces\ServiceContainerInterface;
 
-class ServiceContainer extends ServiceContainerReal {
-      
+class ServiceContainer implements ServiceContainerInterface{
     
-    public function session_storage(): NativeSessionStorage
+	/** @var array */
+    private $services;
+	
+	/** @var Config */
+    private $config;  
+    
+    /**
+     * @param Config $config 
+     */
+    public function __construct(Config $config = null)
     {
-        return $this->getService('session_storage');
+        $this->config = $config ?? new Config();
     }
     
-    
-    public function user_repository(): UserRepository
-    {
-        return $this->getService('user_repository');
+    final public function addService(string $name, $object): self
+    {     
+				
+        if(!is_object($object)){
+            throw new ServiceException(' Сервис "'.$name.'" должен быть объектом ');
+        }
+        $this->services[$name] = $object;
+		return $this;
     }
     
+    /**
+     * Загружает и возвращает объект сервиса
+     * @throws ServiceException
+     * @param type $name Имя сервиса
+     * @return object  Возвращает объект сервиса
+     */
+    final public function get(string $name)
+    {		                		
+		return $this->services[$name] ?? $this->initService($name);
+    }	
     
-    public function authenticator(): DbAuthenticator
-    {
-        return $this->getService('authenticator');
-    }
-    
-    
-    public function authenticatorLdap(): LdapAuthenticator
-    {
-        return $this->getService('authenticatorLdap');
-    }
-    
-    
-    public function security(): Security
-    {
-        return $this->getService('security');
-    }
-    
-    
-    public function viewer(): TwigViewer
-    {
-        return $this->getService('viewer');
-    }
-    
+    /**
+     * Загружает нужный сервис и сервисы от которых он зависит.
+     * Если сервисы ссылаются друг на друга выдаст исключение.
+     * 
+     * @param type $name
+     * @param array $services Имена вызывающих сервисов
+     * @throws \ServiceException
+     */
+    private function initService(string $name, array $usedNames=[])
+    {		
+        if(isset($this->services[$name])){
+            return $this->services[$name];
+        }                						
+       
+		if(in_array($name, $usedNames)){
+			throw new \ServiceCycleException('Обнаружена цикличность сервисов '.implode('=>',$usedNames)."=>$name");
+		}        		
+		
+        $class = $this->config->getValue($name, 'class') ?? '';
+        $params = $this->config->getValue($name, 'params') ?? [];
         
+		if(!$class){
+			throw new \ServiceNotFoundException('Не найден сервис "'.$name.'" в конфиге приложения');
+		}
+		
+        if(!isset($params[0])){
+            return $this->services[$name] = new $class();
+        }
+        
+		
+        /* Загружаем все нужные сервисы */
+        foreach($params as $i=>$param){			
+            if(is_string($param) && substr($param, 0, 1) == "@"){               
+                $serviceName = substr($param, 1);
+				$chain = array_merge($usedNames, [$name]);
+                $this->services[$param] = $resParams[$i] = $this->initService($serviceName, $chain);
+            }else{
+                $resParams[$i] = $param;
+            }            
+        }                
+         		
+        return $this->services[$name] = new $class(...$resParams);
+        
+    }
 }

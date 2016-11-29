@@ -58,7 +58,7 @@ class LocalRoute extends Route{
 	
 	private function runController( string $controllerClass, array $params=[]): Response
 	{
-		if(isset($params[0]) && preg_match('~[^a-z09_]+~ui', $params[0])){
+		if(isset($params[0]) && preg_match('~[^a-z09_.]+~ui', $params[0])){
 			throw new \PageNotFoundException('','Экшен создержит некорректные символы');
 		}
 		
@@ -144,7 +144,7 @@ class LocalRoute extends Route{
 	{				
 		$this->response = $this->response->withStatus($code, $message, $systemMessage);
 				
-		if($this->isSystemResponce || !$path){
+		if($this->isSystemResponce || !$path || preg_match('~\.[^\/]*$~',$this->uri->getPath())){
 			return $this->response;
 		}
 		

@@ -1,12 +1,10 @@
 <?php
 include_once 'functions.php';
 
-/** 
- * @autor Fedyakin Alexander
- */
-
 use Composer\Autoload\ClassLoader as ClassLoader;
-use Kernel\Services\{Config, Router, Firewall};
+use Kernel\Services\{Config, Router, Firewall, FileDataStorage, Console};
+use Kernel\Services\ServiceContainer\ServiceContainerCreator;
+
 
 
 /**
@@ -53,6 +51,9 @@ class App {
 	        
     /** @var \ServiceContainer Объект контейнера сервисов */
     private $ServiceContainer = null;
+	
+	/** @var Config */
+	private $config = null;
     
     
     private function __construct()
@@ -160,7 +161,7 @@ class App {
     private function setHttpPath($httpPath): self
     {
         
-        $this->httpPath = $httpPath;
+        $this->httpPath = realpath($httpPath);		
         return $this;
     }            
                 
@@ -182,11 +183,11 @@ class App {
             return false;                
                 
         self::$_instance = $App = new App();	
-        
-        $App->setEnv(getenv('APP_ENV'))
-            //->setErrorHandler()
-            ->setHttpPath($httpPath)                  
-            ->setClassLoader($loader)            
+        		
+        $App->setEnv(getenv('APP_ENV'))            
+            ->setHttpPath($httpPath)        
+            ->setClassLoader($loader)			
+			->initConfig()
             ->initApplication();            
 		
         try {
@@ -205,16 +206,46 @@ class App {
 	/** 
 	 * Запускает приложение в режиме консоли
 	 */
-    public function runC()
+    public function runConsole($httpPath, ClassLoader $loader)
     {
         $App = self::$_instance = new App(); 
         $App->setEnv('console')
-            //->setErrorHandler()                            
+            ->setHttpPath($httpPath)
             ->setClassLoader($loader)
-            ->initApplication();            
-    }
+			->initConfig()					
+            ->initApplication()
+			->runConsoleApplication();
+		
+		echo 'ConsoleRun';
+    }		
     
-    
+	private function runConsoleApplication()
+	{		
+		$console = new Console($this->ServiceContainer, $this->httpPath);
+		$console->run();		
+	}
+	
+	
+	private function initConfig(): self
+	{
+		$cacheFile = __DIR__.'/cache/kernel/config/config_'.$this->env.'.cch';
+		if(!file_exists($cacheFile) || substr($this->env, -3)=='dev'){
+			/* Инициализируем сервис конфига */
+			$config = new Config([], $this->getEnv(),['%App%' => $this->getAppPath()]);
+			$config->addFile($this->mainConfigPath.'/config.yml', true);
+			if($this->env){
+				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
+			}
+			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');				
+			$this->config = $config;
+			//FileDataStorage::touch($cacheFile, serialize($config->getValue()));
+			return $this;
+		}
+		
+		
+		$this->config = new Config(unserialize(FileDataStorage::read($cacheFile)), $this->env);
+		return $this;
+	}
     /**
      * @todo кешировать конфигурацию
      * Инициализация сервисов
@@ -224,15 +255,8 @@ class App {
     {           		
         ob_start();
                 
-        try {                                   
-            
-            /* Инициализируем сервис конфига */                 
-            $config = new Config([], $this->getEnv(),['%App%' => $this->getAppPath()]);
-			$config->addFile($this->mainConfigPath.'/config.yml', true);
-			if($this->env){
-				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
-			}
-			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');						
+        try {			
+			$config = $this->config;
 			
             /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->get('services'));

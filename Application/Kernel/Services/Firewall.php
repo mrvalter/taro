@@ -103,6 +103,10 @@ class Firewall implements FirewallInterface{
 		return $this->systemResponses[$code] ?? '';
 	}		
 	
+	public function getBundles(): array
+	{
+		return $this->requireBundles;
+	}
 	/**
      * Ищет подключенный бандл по имени
      * @param string $name

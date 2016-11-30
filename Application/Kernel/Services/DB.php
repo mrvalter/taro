@@ -16,9 +16,9 @@ class DB {
 	
 	private $config;
 	
-	public function __construct(array $dbases)
+	public function __construct(array $connects=[])
 	{		
-		$this->config = $dbases;		
+		$this->config = $connects;		
 	}
 	
 	/**
@@ -47,7 +47,7 @@ class DB {
 			$driver   = isset($config[$name]['driver'])   ? $config[$name]['driver']   : 'mysql';
 			$port     = isset($config[$name]['port'])     ? $config[$name]['port']     : '';			
 			
-			$class = '\\Services\\DB\\'.ucfirst($driver).'Driver';			
+			$class = '\\Kernel\\Services\\DB\\'.ucfirst($driver).'Driver';			
 			return self::$dbs[$name] = new $class($user, $password, $host, $encoding, $dbname);
 		}
 		

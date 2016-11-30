@@ -4,12 +4,12 @@ public_urls:
 
 # Подключаемые бандлы
 required_bundles:
-    swar: Swar_Bundle
-    share: Share_Bundle
+    share:    Share_Bundle
     firewall: Firewall_Bundle
+    medcrm:   MedCrm_Bundle
 
 #бандл главной страницы (bundle/IndexController->indexAction())
-main_page_bundle: share
+main_page_bundle: medcrm
 
 #Назначаем отображение определенных страниц на коды Ответов
 # Если будет Ответ содержит код, не прописанный ниже или страницы не существует, 

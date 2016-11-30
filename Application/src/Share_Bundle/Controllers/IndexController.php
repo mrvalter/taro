@@ -7,7 +7,8 @@ class IndexController extends Controller {
     
     public function indexAction(int $root=0, $id='kop')
     {					
+		$this->getPDO('db');
 		
-        return $this->render('hello', ['root'=>$root, 'id'=>$id]);
-    }		
+		return $this->render('hello', ['root'=>$root, 'id'=>$id]);
+    }	
 }

@@ -48,40 +48,62 @@ class ServiceContainer implements ServiceContainerInterface{
      * @param array $services Имена вызывающих сервисов
      * @throws \ServiceException
      */
-    private function initService(string $name, array $usedNames=[])
+    private function initService(string $serviceName, array $usedNames=[])
     {		
-        if(isset($this->services[$name])){
-            return $this->services[$name];
+        if(isset($this->services[$serviceName])){
+            return $this->services[$serviceName];
         }                						
        
-		if(in_array($name, $usedNames)){
-			throw new \ServiceCycleException('Обнаружена цикличность сервисов '.implode('=>',$usedNames)."=>$name");
+		if(in_array($serviceName, $usedNames)){
+			throw new \ServiceCycleException('Обнаружена цикличность сервисов '.implode('=>',$usedNames)."=>$serviceName");
 		}        		
 		
-        $class = $this->config->getValue($name, 'class') ?? '';
-        $params = $this->config->getValue($name, 'params') ?? [];
-        
+        $class = $this->config->getValue($serviceName, 'class') ?? '';
+        $params = $this->config->getValue($serviceName, 'params') ?? [];
+        		
 		if(!$class){
-			throw new \ServiceNotFoundException('Не найден сервис "'.$name.'" в конфиге приложения');
+			throw new \ServiceNotFoundException('Не найден сервис "'.$serviceName.'" в конфиге приложения');
 		}
 		
-        if(!isset($params[0])){
-            return $this->services[$name] = new $class();
-        }
-        
-		
+        if(empty($params)){
+            return $this->services[$serviceName] = new $class();
+        }        						
+			
         /* Загружаем все нужные сервисы */
-        foreach($params as $i=>$param){			
-            if(is_string($param) && substr($param, 0, 1) == "@"){               
-                $serviceName = substr($param, 1);
-				$chain = array_merge($usedNames, [$name]);
-                $this->services[$param] = $resParams[$i] = $this->initService($serviceName, $chain);
-            }else{
-                $resParams[$i] = $param;
-            }            
-        }                
-         		
-        return $this->services[$name] = new $class(...$resParams);
+		$refService = new \ReflectionClass($class);		
+		$refConstructor = $refService->getConstructor();
+		$refParameters = $refConstructor->getParameters();						
+		
+		
+		/* Подключаем нужные сервисы */
+		foreach ($params as &$pValue){
+			if(is_string($pValue) && substr($pValue, 0, 1) == "@"){
+				$addserviceName = substr($pValue, 1);
+				$chain = array_merge($usedNames, [$serviceName]);
+				$pValue = $this->services[$addserviceName] = $this->initService($addserviceName, $chain);
+			}
+		}				
+		
+		$resParams = [];
+		foreach ($refParameters as $i => $refParameter){			
+			if($refParameter->isVariadic()){
+				var_dump($params);
+				$resParams = array_merge($resParams, $params);
+				break;
+			}
+			$pname = $refParameter->getName();
+			if(isset($params[$i])){
+				$resParams[] = $params[$i];
+				unset($params[$i]);
+			}elseif(isset($params[$pname])){
+				$resParams[] = $params[$pname];
+				unset($params[$pname]);
+			}else{
+				throw new \InvalidArgumentException("Не найден параметр $pname в конфиге сервиса $serviceName");
+			}									
+		}
+        		
+        return $this->services[$serviceName] = $refService->newInstanceArgs($resParams);
         
-    }
+    }		
 }

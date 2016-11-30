@@ -23,17 +23,7 @@ class MysqlDriver extends DBConnect {
 				.';dbname='.$this->_dbname;			
         $pdo = new PDODriver($str, $this->_user, $this->_password, $options);
         $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
-        $pdo->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('Services\DB\Statement', array($pdo)));
+        $pdo->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('Kernel\Services\DB\Statement', array($pdo)));
 		return $pdo;
-	}
-	
-	protected function createLink()
-	{
-		$link = mysqli_connect($this->_host, $this->_user,$this->_password, $this->_dbname, $this->_port);
-        if (mysqli_connect_errno()) { 
-            throw new \DBException("Connect failed: %s\n", mysqli_connect_error());
-        }
-        mysqli_query($link,'SET NAMES "'.$this->_encoding.'"');
-        return $link;
 	}		
 }

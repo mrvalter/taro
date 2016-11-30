@@ -40,4 +40,16 @@ services:
      - %App%/layouts
     methods:
         - methodName: [param1, param2]
-        - mehtod2:    [param1, param2]    
+        - mehtod2:    [param1, param2]
+
+  database:
+    class: Kernel\Services\DB
+    params:
+        connects:
+          db:
+            host:     localhost
+            user:     root
+            password: ghbdtn
+            encoding: UTF8
+            driver:   mysql
+            dbname:   MED_CRM

@@ -58,8 +58,10 @@ abstract class Controller implements ControllerInterface {
 	public function initViewerPathTemplate()
 	{		
 		$templatePath = $this->getFirewall()->getBundlesPath().'/'.$this->bundle
-		.'/view/'.$this->controllerName;
-		$this->viewer->addTemplatePath($templatePath, $this->getViewNamespace());
+		.'/views/'.$this->controllerName;
+		if(file_exists($templatePath)){
+			$this->viewer->addTemplatePath($templatePath, $this->getViewNamespace());
+		}
 		
 	}
 	
@@ -77,7 +79,7 @@ abstract class Controller implements ControllerInterface {
      */
     final protected function getPDO(string $db): PDODriver
     {
-		return $this->getService('db')->getDBConn($db)->getPdo();
+		return $this->getService('database')->getDBConn($db)->getPdo();
     }
 
 	

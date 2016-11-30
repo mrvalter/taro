@@ -81,8 +81,7 @@ abstract class DBConnect {
 	public function getDbName(){
 		return $this->_dbname;
 	}
-	
-	abstract protected function createLink();	
+		
 	/**
 	 * @return \Services\DB\PDODriver
 	 */

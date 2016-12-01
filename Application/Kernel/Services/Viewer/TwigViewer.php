@@ -3,6 +3,7 @@ namespace Kernel\Services\Viewer;
 
 use Kernel\Interfaces\ViewInterface;
 use Kernel\Services\FileDataStorage;
+use Kernel\Services\Viewer\Extensions\WidgetTokenParser;
 
 /**
  * Description of TwigViewer
@@ -16,7 +17,7 @@ class TwigViewer implements ViewInterface {
 	private $twig;
 	private $cachePath;
 	
-	public function __construct(string $cachePath='', string $layoutsPath='')
+	public function __construct(string $cachePath='', string $layoutsPath='', array $extensions=[])
 	{
 		$this->cachePath = $this->createCacheDir($cachePath);
 		
@@ -26,6 +27,8 @@ class TwigViewer implements ViewInterface {
 		$this->twig = new \Twig_Environment($loader, [
 			'cache'=>$this->cachePath
 		]);
+		
+		$this->twig->addTokenParser(new WidgetTokenParser());
 		
 		if($layoutsPath){
 			if(!file_exists($layoutsPath)){

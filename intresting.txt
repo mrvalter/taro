@@ -1,0 +1,1 @@
+https://swisnl.github.io/jQuery-contextMenu/demo/disabled-menu.html

@@ -84,7 +84,7 @@ class Router {
 		$host = $uri->getHost();
 		
 		
-        if($host !== 'localhost' && $host !== $_SERVER['HTTP_HOST']){
+        if($host !== 'localhost' && $host !== $_SERVER['HTTP_HOST'] && $host){
             return new CurlRoute();
         } 
 								
@@ -112,80 +112,7 @@ class Router {
         
         return self::$config;
     }
-    
-	/**
-	 * 
-	 * @param \ReflectionMethod $refMethod
-	 * @param RequestInterface $request
-	 * @return array 
-	 */
-	public function getActionParamsValues(\ReflectionMethod $refMethod, RequestInterface $request): array
-	{
-		$refParams  = $refMethod->getParameters();
-		if(!isset($refParams[0])){
-			return [];
-		}
-		
-		$pathParams = array_slice($request->getUri()->getPathParts(), 3);
-		
-		foreach($refParams as $i => $refParam){
-			$paramName = $refParam->getName();
-			$value = null;
-			if(isset($pathParams[$i])){
-				$value = $pathParams[$i];
-			}elseif(isset($_POST[$paramName])){
-				$value = $_POST[$paramName];
-			}elseif(isset($_GET[$paramName])){
-				$value = $_GET[$paramName];
-			}
-			
-			$paramType = $refParam->getType();
-			if(null !== $paramType && null !== $value){
-				//$this->getFirewall()->checkValue($value, $paramType);
-			}
-			
-						
-		}
-		var_dump($refParams);
-		//die();
-		$actionParams=[];
-		
-		$getParams = '';
-		
-		die();
-		if(sizeof($refParams)){				
-			for($x=0; $x<count($refParams); $x++){
-				
-				if($refParams[$x]->isVariadic()){
-					$actionParams = array_merge($actionParams, $paramsUrl);
-					break;
-				}
-				
-				
-				if($refParams[$x]->isDefaultValueAvailable()){					
-					$actionParams[$x] = $refParams[$x]->getDefaultValue();
-				}else{
-					$actionParams[$x] = null;
-				}		
-							
-				if(isset($paramsRequest[$refParams[$x]->name])){
-					$actionParams[$x] = $paramsRequest[$refParams[$x]->name];					
-					unset($paramsRequest[$refParams[$x]->name]);					
-				}
-				
-				if(isset($paramsUrl[$x])){
-					$actionParams[$x] = $paramsUrl[$x];
-					unset($paramsUrl[$x]);					
-				}
-				
-				if(isset($params[$refParams[$x]->name])){
-					$actionParams[$x] = $params[$refParams[$x]->name];
-					unset($params[$refParams[$x]->name]);
-				}												 
-			}			
-        }    
-				
-	}
+    	
     /**
      * Выполняет запрос
      * 
@@ -300,11 +227,22 @@ class Router {
      * Создает роутер из серверных переменных запроса
      * @return static
      */    
-    static function createFromGlobals()
+    static function createFromGlobals(): self
     {     		
         $request = ServerRequest::fromGlobals();		
         return new Router($request);
     }	
+		
+	/**
+     * Создает роутер из переданного значения url
+     * @return static
+     */    
+    static function createFromUrl(string $url=''): self
+    {
+		
+        $request = new Request('GET', $url);
+        return new Router($request);
+    }
     
     /**
      * 

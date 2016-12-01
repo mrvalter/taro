@@ -98,6 +98,8 @@ class ServiceContainer implements ServiceContainerInterface{
 			}elseif(isset($params[$pname])){
 				$resParams[] = $params[$pname];
 				unset($params[$pname]);
+			}elseif($refParameter->isDefaultValueAvailable ()){
+				$resParams[] = $refParameter->getDefaultValue();
 			}else{
 				throw new \InvalidArgumentException("Не найден параметр $pname в конфиге сервиса $serviceName");
 			}									

@@ -59,6 +59,7 @@ abstract class Controller implements ControllerInterface {
 	{		
 		$templatePath = $this->getFirewall()->getBundlesPath().'/'.$this->bundle
 		.'/views/'.$this->controllerName;
+		
 		if(file_exists($templatePath)){
 			$this->viewer->addTemplatePath($templatePath, $this->getViewNamespace());
 		}

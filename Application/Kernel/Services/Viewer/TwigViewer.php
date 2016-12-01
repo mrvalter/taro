@@ -19,24 +19,35 @@ class TwigViewer implements ViewInterface {
 	
 	public function __construct(string $cachePath='', string $layoutsPath='', array $extensions=[])
 	{
-		$this->cachePath = $this->createCacheDir($cachePath);
-		
 		\Twig_Autoloader::register();
+		
 		$loader = new \Twig_Loader_Filesystem();
-		
-		$this->twig = new \Twig_Environment($loader, [
-			'cache'=>$this->cachePath
-		]);
-		
-		$this->twig->addTokenParser(new WidgetTokenParser());
-		
 		if($layoutsPath){
 			if(!file_exists($layoutsPath)){
 				throw new \FileNotFoundException('Не найден путь до папки с layouts');
 			}
 			
-			$this->addTemplatePath($layoutsPath, 'layouts');
-		}		
+			$loader->addPath($layoutsPath, 'layouts');
+		}
+		$this->cachePath = $this->createCacheDir($cachePath);
+		
+		$twig = new \Twig_Environment($loader, [
+			'cache'=>$this->cachePath
+		]);
+		
+		/* Добавляем обработчик Виджетов  */
+		$twig->addTokenParser(new WidgetTokenParser());
+		
+		/* Добавляем пути к медиа контенту */		
+		$twig->addGlobal('MEDIA', (object)['global'=>'path_to_global', 'bundle'=>'path_to_bundle_media']);
+		
+		/* функция дампа переменной */		
+		$function = new \Twig_SimpleFunction('dump', function ($array) {
+			extension_loaded('xdebug') ? var_dump($array) : printf("<pre>%s</pre>", print_r($array, true));
+		});
+		$twig->addFunction($function);
+		
+		$this->twig = $twig;
 	}
 	
 	public function createTemplate(string $stringTemplate): \Twig_Template

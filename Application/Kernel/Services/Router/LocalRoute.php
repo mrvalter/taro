@@ -37,6 +37,7 @@ class LocalRoute extends Route{
 		try {
 
 			$controllerClass = $this->findController($this->uri);
+			
 			if($this->checkAccess($this->uri)){			
 				$params = array_slice($this->uri->getPathParts(), 2);
 				return $this->runController($controllerClass, $params);
@@ -140,7 +141,7 @@ class LocalRoute extends Route{
 		
 	}
 	
-	private function getSystemResponse($code, $path = '', $message='', $systemMessage='')
+	private function getSystemResponse($code, $path = '', $message='', $systemMessage=''): Response
 	{	
 		
 		$this->response = $this->response->withStatus($code, $message, $systemMessage);

@@ -10,7 +10,7 @@ class ReflectionChecker {
 	const REQUIRED_PARAM_NOT_SET=4;
 	const TYPE_MISMATCH = 5;
 	
-	public static function checkClass(string $className, string $methodName='__construct', array $params=[], $thowMoreParams=true) {				
+	public static function checkClass(string $className, string $methodName='__construct', array $params=[], $throwMoreParams=true) {				
 		
 		if(!class_exists($className)){
 			throw new \ReflectionCheckerException ("Не найден класс  {$className}", "", self::CLASS_NOT_FOUND);
@@ -24,7 +24,7 @@ class ReflectionChecker {
 		$refMethod = $refClass->getMethod($methodName);
 		$refParameters = $refMethod->getParameters();
 				
-		if(count($params) > count($refParameters) && $thowMoreParams){
+		if(count($params) > count($refParameters) && $throwMoreParams){
 			throw new \ReflectionCheckerException (
 					"Передано больше параметров,"
 					. " чем прописано в методе $className::$methodName", 
@@ -52,9 +52,7 @@ class ReflectionChecker {
 					}
 				}				
 			}
-		}
-		
-		/* Проверяем на соответствие переданных параметров для сервиса и их объявления в классе сервиса */		
+		}				
 	}
 	
 	

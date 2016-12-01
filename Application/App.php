@@ -179,7 +179,7 @@ class App {
             $response =$App->getService('firewall')->getExceptionResponse($e);
         }
 	
-		echo $response;		
+		echo $response;
 		
         $time = microtime(true) - $startTime;
         echo '<script>console.log("'.sprintf('Скрипт выполнялся %.4F сек.', $time).'");</script>';        
@@ -367,24 +367,7 @@ class App {
     public static function getTmp($key)
     {
         return isset($_SESSION['_SYSTEM']['tmp']['DATA'][$key]) ? $_SESSION['_SYSTEM']['tmp']['DATA'][$key] : '';
-    }
-    
-    public static function getNotFoundView(){
-            $app = self::o();
-            $Router = $app->getService('router');
-            $Router->setNotFound();		
-            return $app->runController($Router);
-
-    }
-	
-    public static function insert($controller, $action, $params=[], MenuItem $right=null)
-    {
-        $app = self::o();      
-        $Router = $app->getService('router');
-        $newRouter = new Services\Router();
-        $newRouter->createFromParams($Router->getBundle(), $controller, $action);
-        return $app->runController($newRouter, $params, $right);
-    }		
+    }        	    
 	
 	public static function widget($widget, $params=array(), $isPublic=false)
 	{		

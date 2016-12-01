@@ -1,6 +1,5 @@
 <?php
 namespace Kernel\Services\HttpFound;
-
 use Psr\Http\Message\UriInterface;
 
 /**

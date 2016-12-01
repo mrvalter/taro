@@ -39,11 +39,16 @@ class TwigViewer implements ViewInterface {
 		}		
 	}
 	
+	public function createTemplate(string $stringTemplate): \Twig_Template
+	{
+		
+		return $this->twig->createTemplate($stringTemplate);
+	}
 	public function getFileExtension(): string
 	{
 		return self::templateExtension;
 	}
-	
+		
 	public function getLang()
 	{
 		

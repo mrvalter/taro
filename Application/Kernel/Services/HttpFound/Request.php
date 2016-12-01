@@ -1,17 +1,11 @@
 <?php
-
-/**
- * @autor Fedyakin Alexander
- * @copyright (c) 2015, Materia Medica Group
- * @category MED CRM
- */
 namespace Kernel\Services\HttpFound;
 
-use InvalidArgumentException;
-use Psr\Http\Message\RequestInterface;
+
 use Psr\Http\Message\StreamInterface;
-use Kernel\Services\HttpFound\Uri;
 use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\RequestInterface;
+use Kernel\Services\HttpFound\Uri;
 
 /**
  * PSR-7 request implementation.
@@ -28,6 +22,9 @@ class Request implements RequestInterface
 
     /** @var null|UriInterface */
     private $uri;
+	
+	/** @var bool */
+	private $isAjax;
 
     /**
      * @param string                               $method  HTTP method
@@ -59,8 +56,25 @@ class Request implements RequestInterface
         if ($body !== '' && $body !== null) {
             $this->stream = stream_for($body);
         }
+		
+		$this->isAjax = false;
+		
+		if(
+			isset($_SERVER['HTTP_X_REQUESTED_WITH']) 
+			&& !empty($_SERVER['HTTP_X_REQUESTED_WITH']) 
+			&& strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
+		){
+			
+			$this->isAjax = true;
+		}
+
     }
 
+	public function isAjax(): bool
+	{
+		return $this->isAjax;
+	}
+	
     public function getRequestTarget()
     {
         if ($this->requestTarget !== null) {
@@ -81,7 +95,7 @@ class Request implements RequestInterface
     public function withRequestTarget($requestTarget)
     {
         if (preg_match('#\s#', $requestTarget)) {
-            throw new InvalidArgumentException(
+            throw new \InvalidArgumentException(
                 'Invalid request target provided; cannot contain whitespace'
             );
         }

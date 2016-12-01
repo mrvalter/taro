@@ -20,7 +20,7 @@ class WidgetTokenParser extends \Twig_TokenParser{
 			$stream->expect(\Twig_Token::BLOCK_END_TYPE);				
         }
 		
-		$val = (string)Router::createFromUrl($value)->sendRequest();
+		$val = (string)Router::createFromUrl($value)->execute();
 		return new \Twig_Node_Text($val, $token->getLine());
     }
 

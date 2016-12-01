@@ -2,13 +2,13 @@
 
 namespace Kernel\Services\HttpFound;
 
-use GuzzleHttp\Psr7\ServerRequest as GuzzServerRequest;
 use GuzzleHttp\Psr7\LazyOpenStream;
-use Kernel\Services\HttpFound\Uri;
 use \Detection\MobileDetect;
 
+use Kernel\Services\HttpFound\Uri;
 
-class ServerRequest extends GuzzServerRequest
+
+class ServerRequest extends Request
 {
 	
 	/** @var MobileDetect */

@@ -72,24 +72,7 @@ class App {
     {
         return self::$_instance;
     }        
-    
-                        
-    
-    /**
-     * Возвращает обсолютный путь до папки конфига
-     * @return string 
-     */
-    public function getMainConfigPath(): string
-    {
-        return $this->mainConfigPath;
-    }       
-    
-    public function getPathToSelfBundle(): string
-    {
-        
-        return $this->bundlesPath.'/'.$this->getService('router')->getBundle();        
-    }	    
-	
+       
     /**
      * 
      * @return string Возвращает обсолютный пас к папки Application
@@ -191,12 +174,12 @@ class App {
             ->initApplication();            
 		
         try {
-            $response = $App->runHttpApplication();			
+            $response = Router::createFromGlobals()->execute();			
         }catch (\Exception $e){
             $response =$App->getService('firewall')->getExceptionResponse($e);
         }
 	
-		echo $response;
+		echo $response;		
 		
         $time = microtime(true) - $startTime;
         echo '<script>console.log("'.sprintf('Скрипт выполнялся %.4F сек.', $time).'");</script>';        
@@ -268,9 +251,7 @@ class App {
             /* Инициализируем файрволл */
             $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
             $this->ServiceContainer->addService('firewall', $firewall); 
-            
-            Router::setFirewall($firewall);
-            Router::setConfig($config);
+                        
 			Router::setServiceContainer($this->ServiceContainer);
 
         }catch(\Exception $e){            
@@ -285,15 +266,7 @@ class App {
 		}	*/
 		
         return $this;		       
-    }
-    
-    /**
-     * Запуск контроллера
-     */
-    private function runHttpApplication()
-    {            
-        return Router::createFromGlobals()->sendRequest();
-    }
+    }       
         
     private function buildTmpRequestVars()
     {

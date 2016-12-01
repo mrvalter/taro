@@ -7,11 +7,13 @@ namespace Kernel\Classes;
  */
 
 //use Kernel\Services\Interfaces\ViewInterface;
+use Kernel\Services\HttpFound\Request;
 use Kernel\Services\{Router, Firewall, HttpFound\Uri, DB\PDODriver};
 use Kernel\Interfaces\{ControllerInterface, ViewInterface};
 use Kernel\Services\Security\Interfaces\UserInterface;
+use Psr\Http\Message\RequestInterface;
 use ServiceContainer;
-use \Psr\Http\Message\RequestInterface;
+
 
 
 /**
@@ -29,14 +31,24 @@ abstract class Controller implements ControllerInterface {
 		
 	private static $rights = [];
 	
+	/** @var string */
 	public $title;
 	
+	/** @var string */
 	private $className = '';
+	
+	/** @var string */
 	private $bundle;
+	
+	/** @var string */
 	private $controllerName;
 	
 	private $serviceContainer = null;
+	
+	/** @var SwRequestInterface*/
 	private $request = null;
+	
+	/** @var ViewInterface */
 	private $viewer = null;
     
 	
@@ -55,21 +67,35 @@ abstract class Controller implements ControllerInterface {
 		$this->initViewerPathTemplate();
     }		   	
 	
-	public function initViewerPathTemplate()
+	public function initViewerPathTemplate(): self
 	{		
-		$templatePath = $this->getFirewall()->getBundlesPath().'/'.$this->bundle
-		.'/views/'.$this->controllerName;
 		
-		if(file_exists($templatePath)){
-			$this->viewer->addTemplatePath($templatePath, $this->getViewNamespace());
+		$templatesPath = $this->getTemplatesPath();
+		
+		if(file_exists($templatesPath)){
+			$this->viewer->addTemplatePath($templatesPath, $this->getViewNamespace());
 		}
+		return $this;
 		
 	}
 	
-	public function getViewNamespace()
+	/** 
+	 * return path to templates of this Controller
+	 */
+	public function getTemplatesPath(): string
+	{
+		return $this->getFirewall()->getBundlesPath().'/'.$this->bundle
+		.'/views/'.$this->controllerName;
+	}
+	
+	/**
+	 * return namespace of views of this Controller
+	 */
+	public function getViewNamespace(): string
 	{
 		return str_replace('\\', '_', $this->className);
 	}
+	
 	
 	public function getViewer(): ViewInterface
 	{
@@ -202,40 +228,40 @@ abstract class Controller implements ControllerInterface {
      */
     protected function checkRightW($optionName='')
     {
-            if(null === $this->rights){
-                    return false;
-            }
+		if(null === $this->rights){
+				return false;
+		}
 
-            if($optionName){
-                    $option = $this->getOptionByName($optionName);
-                    return null !== $option && $option->getRight() == 'W';
-            }
+		if($optionName){
+				$option = $this->getOptionByName($optionName);
+				return null !== $option && $option->getRight() == 'W';
+		}
 
-            return strtoupper($this->rights->getRight()) == 'W';
+		return strtoupper($this->rights->getRight()) == 'W';
     }
 
     protected function checkRightR($optionName='')
     {
-            if(null === $this->rights){
-                    return false;
-            }
+		if(null === $this->rights){
+				return false;
+		}
 
-            if($optionName){
-                    $option = $this->getOptionByName($optionName);
-                    return null !== $option && in_array(strtoupper($option->getRight()),['R','W']);
-            }
+		if($optionName){
+				$option = $this->getOptionByName($optionName);
+				return null !== $option && in_array(strtoupper($option->getRight()),['R','W']);
+		}
 
-            return in_array(strtoupper($this->rights->getRight()), ['R','W']);
+		return in_array(strtoupper($this->rights->getRight()), ['R','W']);
     }
 
 
     protected function getRightAction($controller, $action)
     {
-            $nowRouter = $this->getService('router');
-            $router = new Router();
-            $router->createFromParams($nowRouter->getBundle(), $controller, $action);
-            $security = $this->getService('security');
-            return $security->checkAccess($router);
+		$nowRouter = $this->getService('router');
+		$router = new Router();
+		$router->createFromParams($nowRouter->getBundle(), $controller, $action);
+		$security = $this->getService('security');
+		return $security->checkAccess($router);
     }
     
     /**
@@ -246,6 +272,22 @@ abstract class Controller implements ControllerInterface {
     */
     public function render(string $template, array $params=[]):string
     {
+		if($this->request->isAjax()){
+			$templateFile = $this->getTemplatesPath().'/'.$template.$this->getViewer()->getFileExtension();
+			if(!file_exists($templateFile)){
+				throw new \FileNotFoundException("Не найден template $template контроллера {$this->getClassName()}");
+			}
+			
+			$string = '';
+			$file = file_get_contents($templateFile);
+			if(preg_match('/{%\s+block\s+content\s+%}(.*?){%\s+endblock\s+%}/uis', $file, $matches)){
+				$string = $matches[1];
+			}
+			
+			$template = $this->getViewer()->createTemplate($string);
+			return $template->render($params);
+		}
+		
         return $this->getViewer()->render('@'.$this->getViewNamespace().'/'.$template, $params);
     }
     

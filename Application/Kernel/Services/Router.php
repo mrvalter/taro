@@ -66,8 +66,9 @@ class Router {
      */    
     public static function createFromGlobals(): RouteInterface
     {     		
-        	
-        return self::$routes[] = self::createRoute(ServerRequest::fromGlobals());
+        $firewall = self::$serviceContainer->get('firewall');
+		$request = $firewall->verifyRequest(ServerRequest::fromGlobals());
+        return self::$routes[] = self::createRoute($request);
     }
 	
 	/**

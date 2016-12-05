@@ -46,6 +46,9 @@ class Firewall implements FirewallInterface{
 	
 	/** @var array */
 	private $systemResponses;
+	
+	/** @var string */
+	private $http_path_prefix;
     
     /**
      * @param Security $security
@@ -68,6 +71,7 @@ class Firewall implements FirewallInterface{
         $this->bundlesPath = $bundlesPath;
         $this->xdebugLoaded = extension_loaded('xdebug');
 		$this->systemResponses = $config->getValue('system_responses');
+		$this->http_path_prefix = $config->getValue('http_path_prefix');
     }        
     	
     /**
@@ -207,9 +211,22 @@ class Firewall implements FirewallInterface{
      */
     public function verifyRequest(RequestInterface $request)
     {
-        
-        return false;
+		/* Убираем префикс из ссылки */ 
+		if($this->http_path_prefix !== ''){
+			$uri = $request->getUri();
+			$path = $uri->getPath();			
+			if($path != $this->http_path_prefix && substr($path, 0, strlen($this->http_path_prefix)+1) !== $this->http_path_prefix.'/'){
+				throw new \FirewallException('', 'HTTP prefix does not match');
+			}
+			
+			$uri = $uri->withPath(str_replace($this->http_path_prefix, '', $path));
+			$request = $request->withUri($uri);			
+		}
+		
+		return $request;
+			
     }              
+		
 	
 	/**
 	 * 
@@ -259,5 +276,7 @@ class Firewall implements FirewallInterface{
 		
 		return $returnPublicUrls;
 	}
+	
+	
     
 }

@@ -1,15 +1,18 @@
+#http_path_prefix: /MatMedV2_CRM
+
 public_urls:
+    - /api/public
     - /firewall/message
     - '~^\/share(?=\\/|$)~ui'
 
 # Подключаемые бандлы
 required_bundles:
-    share:    Share_Bundle
     firewall: Firewall_Bundle
-    medcrm:   MedCrm_Bundle
+    users:    Users_Bundle
+    main:     Main_Bundle
 
 #бандл главной страницы (bundle/IndexController->indexAction())
-main_page_bundle: medcrm
+main_page_bundle: main
 
 #Назначаем отображение определенных страниц на коды Ответов
 # Если будет Ответ содержит код, не прописанный ниже или страницы не существует, 

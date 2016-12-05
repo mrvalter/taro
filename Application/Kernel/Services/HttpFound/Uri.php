@@ -40,9 +40,6 @@ class Uri implements UriInterface
 
     /** @var string Uri fragment. */
     private $fragment = '';
-
-	/** @var array parts of path /part0/part1/part2 */
-	private $pathParts = [];
 	
     /**
      * @param string $uri URI to parse
@@ -316,18 +313,16 @@ class Uri implements UriInterface
 	 */
 	public function getPathParts(int $num = null)
 	{
-
-		if(!isset($this->pathParts[0]) && $this->path !== '/'){
-            $pathArr = [];
-            $path = substr($this->path, 1);			            
-			$this->pathParts = explode('/', $path);
-		}
+				
+		$path = substr($this->path, 1);			
+		$pathParts = $path ? explode('/', $path) : [];
+		
 		
 		if(null !== $num){
-			return isset($this->pathParts[$num])? $this->pathParts[$num] : null;
+			return isset($pathParts[$num])? $pathParts[$num] : null;
 		}
 				
-		return $this->pathParts;
+		return $pathParts;
 	}
 	
     public function withScheme($scheme)

@@ -36,16 +36,22 @@ class TwigViewer implements ViewInterface {
 		]);
 		
 		/* Добавляем обработчик Виджетов  */
-		$twig->addTokenParser(new WidgetTokenParser());
+		$twig->addTokenParser(new WidgetTokenParser($twig));
 		
 		/* Добавляем пути к медиа контенту */		
 		$twig->addGlobal('MEDIA', (object)['global'=>'path_to_global', 'bundle'=>'path_to_bundle_media']);
 		
 		/* функция дампа переменной */		
-		$function = new \Twig_SimpleFunction('dump', function ($array) {
+		
+		$twig->addFunction(new \Twig_SimpleFunction('dump', function ($array) {
 			extension_loaded('xdebug') ? var_dump($array) : printf("<pre>%s</pre>", print_r($array, true));
-		});
-		$twig->addFunction($function);
+		}));
+		
+		$twig->addFunction(new \Twig_SimpleFunction('widget', function (...$array) {
+			var_dump($array);
+		}));
+		
+		
 		
 		$this->twig = $twig;
 	}

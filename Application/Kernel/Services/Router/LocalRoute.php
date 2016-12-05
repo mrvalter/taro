@@ -59,7 +59,7 @@ class LocalRoute extends Route{
 	
 	private function runController( string $controllerClass, array $params=[]): Response
 	{
-		if(isset($params[0]) && preg_match('~[^a-z09_.]+~ui', $params[0])){
+		if(isset($params[0]) && preg_match('~[^a-z0-9_.]+~ui', $params[0])){
 			throw new \PageNotFoundException('','Экшен создержит некорректные символы');
 		}
 		
@@ -123,7 +123,7 @@ class LocalRoute extends Route{
 		$callParams = [];
 		foreach($refParams as $i=>$refParam){
 			if(!$refParam->isDefaultValueAvailable() && !isset($urlParams[$i])){
-				throw new \ResponseException(400, '', 'Не передан обязательный параметр в метод');
+				throw new \ResponseException(404, '', 'Не передан обязательный параметр в метод');
 			}
 			
 			switch((string)$refParam->getType()){
@@ -168,7 +168,8 @@ class LocalRoute extends Route{
 	private function findController(Uri $uri, $throwException = false): string
 	{
 		
-		$pathArr = $uri->getPathParts();	
+		$pathArr = $uri->getPathParts();
+			
 		$this->bundle = $bundle = isset($pathArr[0])?
 			$this->getFirewall()->getBundleByName($pathArr[0]) :
 			$this->getFirewall()->getMainPageBundle();

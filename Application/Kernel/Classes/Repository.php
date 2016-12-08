@@ -12,33 +12,42 @@ use Services\FormLoader as FormLoader;
  * @category MED CRM
  */
 abstract class Repository {
-	
+
+    private static $serviceContainer = null;
+    
     protected $errors = [];    	
-    protected $user;
-	
-    public function __construct() {
-        $this->user = App::o()->getService('security')->getUser();
-    }              
-	
-	/**
-	 * 
-	 * @param type $name
-	 * @return \Services\DB\DbConn
-	 */
-	public function getDbConn($name){
-		return App::o()->getService('db')->getDbConn($name);
-	}			    
+    protected $user;	              
 	
 	
-	/**
-	 * 
-	 * @param type $name
-	 * @return \Services\DB\PDODriver
-	 */
-	public function getPDOFrom($name)
+	public function __construct() {
+		if(null === self::$serviceContainer){
+			throw new \SystemErrorException('Service Container not load in Repository class');
+		}
+	}
+	
+	public function getServiceContainer()
 	{
-		return $this->getDbConn($name)->getPDO();
-	}		
+		return self::$serviceContainer;
+	}
+    /**
+    * 
+    * @param type $name
+    * @return \Services\DB\DbConn
+    */
+    public function getDbConn($name){
+        return $this->getServiceContainer()->get('database')->getDbConn($name);
+    }			    
+	
+	
+    /**
+     * 
+     * @param type $name
+     * @return \Services\DB\PDODriver
+     */
+    public function getPDOFrom($name)
+    {
+        return $this->getDbConn($name)->getPDO();
+    }		
 	
 	
     public function _makeObjects(PDOStatement $stmt, $entityName)
@@ -46,7 +55,10 @@ abstract class Repository {
         return $stmt->fetchAll(PDO::FETCH_CLASS, $entityName);
     }
 	
-	
+	public function getUser()
+	{
+		
+	}
 	/**
 	 * @deprecated
 	 * @return \Services\DB
@@ -210,7 +222,7 @@ abstract class Repository {
 	public function getConfig($name='')
 	{
 		
-		return $name ? App::o()->getService('_config')->get($name) : App::o()->getService('_config');
+		return $name ? $this->getApp()->getService('_config')->get($name) : $this->getApp()->getService('_config');
 	}
 	
 	/**
@@ -235,6 +247,11 @@ abstract class Repository {
 	
 	public function getPathToSelfBundle()
 	{	
-		return App::o()->getPathToSelfBundle();
+		return $this->getApp()->getPathToSelfBundle();
 	}
+        
+        public static function setServiceContainer($serviceContainer)
+        {
+            self::$serviceContainer = $serviceContainer;
+        }
 }

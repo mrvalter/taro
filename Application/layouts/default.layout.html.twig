@@ -12,9 +12,9 @@
         {% endblock %}
     </head> 
    <body>
-       <menu id="left-menu">
-         
-       </menu>
+	   <div id="main_menu" style="width: 200px; position: absolute;">
+		{% widget source='/widgets/menu/leftmenu' %}
+	   </div>
         <div class="page-wrapper">
             <header></header>
             <div class="row-block page-title">{% block pagetitle %}{% endblock %}</div>

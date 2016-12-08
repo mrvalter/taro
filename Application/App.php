@@ -4,7 +4,7 @@ include_once 'functions.php';
 use Composer\Autoload\ClassLoader as ClassLoader;
 use Kernel\Services\{Config, Router, Firewall, FileDataStorage, Console};
 use Kernel\Services\ServiceContainer\ServiceContainerCreator;
-
+use Kernel\Classes\Repository;
 
 
 /**
@@ -179,7 +179,7 @@ class App {
             $response =$App->getService('firewall')->getExceptionResponse($e);
         }
 	
-		echo $response;		
+		echo $response;	
 		
         $time = microtime(true) - $startTime;
         echo '<script>console.log("'.sprintf('Скрипт выполнялся %.4F сек.', $time).'");</script>';        
@@ -244,6 +244,9 @@ class App {
 			
             /* Подгружаем сервисы */
             $this->ServiceContainer = new ServiceContainer($config->get('services'));
+            Repository::setServiceContainer($this->ServiceContainer);
+            Router::setServiceContainer($this->ServiceContainer);
+            
             $this->ServiceContainer->addService('config', $config);
             
             $this->ServiceContainer->get('session_storage')->start();
@@ -252,7 +255,7 @@ class App {
             $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
             $this->ServiceContainer->addService('firewall', $firewall); 
                         
-			Router::setServiceContainer($this->ServiceContainer);
+            
 
         }catch(\Exception $e){            
                 echo 'Системная ошибка !<br />';			

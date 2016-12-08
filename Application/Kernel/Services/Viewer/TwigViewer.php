@@ -30,9 +30,8 @@ class TwigViewer implements ViewInterface {
 			$loader->addPath($layoutsPath, 'layouts');
 		}
 		$this->cachePath = $this->createCacheDir($cachePath);
-		
 		$twig = new \Twig_Environment($loader, [
-			'cache'=>$this->cachePath
+			//'cache'=>$this->cachePath
 		]);
 		
 		/* Добавляем обработчик Виджетов  */
@@ -98,7 +97,7 @@ class TwigViewer implements ViewInterface {
 	
 	public function createCacheDir($path)
 	{
-		FileDataStorage::makeDir($path);
+		return FileDataStorage::makeDir($path);
 	}
 	
 	public function addTemplatePath($path, $namespace='')

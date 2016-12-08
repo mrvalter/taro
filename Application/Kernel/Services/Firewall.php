@@ -49,6 +49,9 @@ class Firewall implements FirewallInterface{
 	
 	/** @var string */
 	private $http_path_prefix;
+	
+	/** @var bool */
+	private $canRegistration = false;
     
     /**
      * @param Security $security
@@ -72,6 +75,7 @@ class Firewall implements FirewallInterface{
         $this->xdebugLoaded = extension_loaded('xdebug');
 		$this->systemResponses = $config->getValue('system_responses');
 		$this->http_path_prefix = $config->getValue('http_path_prefix');
+		$this->canRegistration = strtolower($config->getValue('registration')) == 'on' ? true : false;		
     }        
     	
     /**
@@ -82,6 +86,11 @@ class Firewall implements FirewallInterface{
     {
         return $this->security;
     }
+	
+	public function canRegistration(): bool
+	{
+		return $this->canRegistration;
+	}
 	
     /**
      * 
@@ -181,14 +190,14 @@ class Firewall implements FirewallInterface{
     
     /**
      * @TODO check Access by rights POST - right W, get - right R
-     * @param Request $request
+     * @param Uri $uri
      * @return boolean
      */
     public function checkAccess(Uri $uri)
     {           		
-		return true;
+		
 		/* Возможно путь является публичным */		
-		$path = $request->getUri()->getPath();
+		$path = $uri->getPath();
 		if(isset($this->publicUrls[0])){
 			foreach($this->publicUrls as $pUrl){	
 				if(preg_match($pUrl, $path)){
@@ -196,12 +205,13 @@ class Firewall implements FirewallInterface{
 				}
 			}
 		}			
-
+		
         if(!$this->getSecurity()->authorize()){
             return false;
         }
-
-        
+		
+		var_dump('CHECK ACCESS');
+		die('diee');
     }
     
     /**
@@ -262,7 +272,7 @@ class Firewall implements FirewallInterface{
 	private function getPublicUrlsFromConfig(Config $config)
 	{
 		$returnPublicUrls = [];
-		$publicUrls = $config->getValue('firewall', 'public_urls');
+		$publicUrls = $config->getValue('public_urls');
 		if(null !== $publicUrls && isset($publicUrls[0])){
 			foreach($publicUrls as $pUrl){
 				if(substr($pUrl, 0, 1) == '~' && strpos($pUrl, '~', 1) !== false ){

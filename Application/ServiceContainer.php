@@ -36,7 +36,7 @@ class ServiceContainer implements ServiceContainerInterface{
      * @return object  Возвращает объект сервиса
      */
     final public function get(string $name)
-    {		                		
+    {			
 		return $this->services[$name] ?? $this->initService($name);
     }	
     
@@ -49,14 +49,15 @@ class ServiceContainer implements ServiceContainerInterface{
      * @throws \ServiceException
      */
     private function initService(string $serviceName, array $usedNames=[])
-    {		
-        if(isset($this->services[$serviceName])){
-            return $this->services[$serviceName];
-        }                						
+    {		                       						
        
 		if(in_array($serviceName, $usedNames)){
 			throw new \ServiceCycleException('Обнаружена цикличность сервисов '.implode('=>',$usedNames)."=>$serviceName");
 		}        		
+		
+		if(isset($this->services[$serviceName])){
+            return $this->services[$serviceName];
+        } 
 		
         $class = $this->config->getValue($serviceName, 'class') ?? '';
         $params = $this->config->getValue($serviceName, 'params') ?? [];

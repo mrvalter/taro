@@ -44,9 +44,16 @@ class WidgetTokenParser extends \Twig_TokenParser{
 			
 			var_dump($name, $resParams);
 		}
+		$stream->expect(\Twig_Token::BLOCK_END_TYPE);
 		
-		$stream->expect(\Twig_Token::BLOCK_END_TYPE);				
-		die();
+		$url = $value->getAttribute('value');
+		$responce = Router::createFromUrl($url)->execute();
+		if($responce->getStatusCode() !== 200){
+			$text = '<p style="color:red">'.$responce->getReasonPhrase().'</p>';
+		}else{
+			$text = (string)$responce;
+		}
+		return new \Twig_Node_Text($text, $stream->getCurrent()->getLine());
         
         
     }

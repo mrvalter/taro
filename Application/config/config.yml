@@ -28,10 +28,13 @@ services:
   authenticatorLdap:
     class: Kernel\Services\Security\Authentication\LdapAuthenticator
     params: ['@user_repository']
-        
+  
+  menu_builder:
+      class: Kernel\Services\MenuBuilder
+      
   security:
     class:  Kernel\Services\Security\Security
-    params: ['@authenticator', '@user_repository', '@session_storage']
+    params: ['@authenticator', '@user_repository', '@session_storage', '@menu_builder']
   
   viewer:
     class: Kernel\Services\Viewer\TwigViewer
@@ -52,4 +55,4 @@ services:
             password: ghbdtn
             encoding: UTF8
             driver:   mysql
-            dbname:   MED_CRM
+            dbname:   medcrm

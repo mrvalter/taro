@@ -7,6 +7,7 @@ use Kernel\Services\Security\Csrf\CsrfManager;
 
 use Kernel\Services\Security\Interfaces\SessionStorageInterface;
 use Kernel\Services\Security\Interfaces\UserRepositoryInterface;
+use Kernel\Services\Security\Interfaces\MenuBuilderInterface;
 use Psr\Http\Message\RequestInterface;
 
 
@@ -24,18 +25,21 @@ class Security {
     private $csrfManager;
     private $sessionStorage;
     private $userRepository;
+    private $menuBuilder;
     private $user;    
     
     public function __construct(        
         AuthenticatorInterface $authenticator,              
         UserRepositoryInterface $userRepository,
-        SessionStorageInterface $sessionStorage
+        SessionStorageInterface $sessionStorage,
+        MenuBuilderInterface $menuBuilder
     ) {
                 
         $this->authenticationManager = new AuthenticationManager ($authenticator, $sessionStorage);
         $this->csrfManager = new CsrfManager();
         $this->userRepository = $userRepository;
         $this->sessionStorage = $sessionStorage->start();
+        $this->menuBuilder = $menuBuilder;
         $this->user = null;
     }
     
@@ -72,6 +76,14 @@ class Security {
 	 */
     public function getRights(RequestInterface $request)
     {
+        $path = $request->getUri()->getPath();
+        $this->menuBuilder->getMenuCollection()->getByUrl($path);
+        
         return [];
+    }
+    
+    public function getMenu()
+    {
+        return $this->menuBuilder->getMenuCollection();
     }
 }

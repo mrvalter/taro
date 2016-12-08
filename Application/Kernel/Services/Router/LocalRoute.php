@@ -4,7 +4,7 @@ namespace Kernel\Services\Router;
 use Kernel\Classes\Controller;
 use Kernel\Services\Firewall;
 use Kernel\Services\HttpFound\{Response, Uri, Request};
-use Psr\Http\Message\RequestInterface;
+//use Psr\Http\Message\RequestInterface;
 /**
  * Description of Route
  *
@@ -20,7 +20,7 @@ class LocalRoute extends Route{
 	private $uri;
 	private $isSystemResponce;
 	
-	public function __construct(\ServiceContainer $serviceContainer, RequestInterface $request, bool $isSystemResponce = false)
+	public function __construct(\ServiceContainer $serviceContainer, Request $request, bool $isSystemResponce = false)
 	{
 		parent::__construct();
 		
@@ -45,16 +45,37 @@ class LocalRoute extends Route{
 			
 		}catch (\ResponseException $ex){
 			
-			$code = $ex->getCode();			
-			return $this->getSystemResponse(
+			$code = $ex->getCode();
+			$message = $ex->getMessage();
+			$systemMessage = $ex->getSysMessage();
+			
+			$this->response = $this->response->withStatus($code, $message, $systemMessage);
+			
+			/** @TODO WIDGETS*/
+			if($this->request->isAjax() || strtolower($this->request->getUri()->getPathParts(0) == 'widgets')){
+				return $this->response;
+			}
+
+			$this->responce = $this->getSystemResponse(
 				$code, 
 				$firewall->getPathBySystemCode($code), 
-				$ex->getMessage(), 
-				$ex->getSysMessage()
+				$message, 
+				$systemMessage
 			);
 			
+		}catch(\AppException $ex){
 			
-		} 
+			$message = $ex->getMessage();
+			$systemMessage = $ex->getSysMessage();
+			$this->response = $this->response->withStatus(503, $message, $systemMessage);
+			
+		}catch(\Throwable $ex){
+			var_dump($ex);
+			$message = $ex->getMessage();			
+			$this->response = $this->response->withStatus(503, $message);
+		}
+		
+		return $this->response;
 	}
 	
 	private function runController( string $controllerClass, array $params=[]): Response
@@ -142,13 +163,12 @@ class LocalRoute extends Route{
 	}
 	
 	private function getSystemResponse($code, $path = '', $message='', $systemMessage=''): Response
-	{	
-		
-		$this->response = $this->response->withStatus($code, $message, $systemMessage);
+	{					
 		
 		if(preg_match('~\.[^\/]*$~',$this->uri->getPath())){
 			return $this->response->withStatus(404, 'FILE NOT FOUND');
 		}
+		
 		if($this->isSystemResponce || !$path){
 			return $this->response;
 		}
@@ -156,7 +176,6 @@ class LocalRoute extends Route{
 		$route = new LocalRoute($this->serviceContainer, new Request('GET',$path), true);
 		$this->addSubRoute($route);
 		$systemResponce = $route->execute();
-		
 		return $systemResponce->getStatusCode() == 404 ? $this->response : $systemResponce->withStatus($code, $message, $systemMessage);
 	}
 	
@@ -173,7 +192,7 @@ class LocalRoute extends Route{
 		$this->bundle = $bundle = isset($pathArr[0])?
 			$this->getFirewall()->getBundleByName($pathArr[0]) :
 			$this->getFirewall()->getMainPageBundle();
-
+		
 		if(!$bundle){
 			throw new \PageNotFoundException('','Бандл не существует!');
 		}		

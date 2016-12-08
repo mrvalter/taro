@@ -16,7 +16,7 @@ use Classes\ADUser as ADUser;
 class Menu {
     	
     private $db;
-    private $userMenu = null;	
+    private $userMenu = null;
     private $currentPath;	
 	private $user;
 	private $bundle; 

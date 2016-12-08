@@ -30,6 +30,10 @@ class ObjectsCollection extends Collection {
 		$this->rows[] = $object;
 	}
 	
+	public function getById($id)
+	{
+		return $this->getOneObjectByProperty('id', $id);
+	}
 	/**
 	 * 
 	 * @param string $property
@@ -42,7 +46,7 @@ class ObjectsCollection extends Collection {
 		
 		if(isset($this->rows[0])){
 			foreach($this->rows as $row){
-				if($row->$property == $value){
+				if($row->{'get'.$property()} == $value){
 					$return[] = $row;
 				}
 			}
@@ -60,8 +64,8 @@ class ObjectsCollection extends Collection {
 	public function getOneObjectByProperty(string $property, $value)
 	{
 		if(isset($this->rows[0])){
-			foreach($this->rows as $row){
-				if($row->$property == $value){
+			foreach($this->rows as $row){								
+				if($row->{'get'.$property}() == $value){
 					return $row;
 				}
 			}

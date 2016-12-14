@@ -87,8 +87,7 @@ class ServiceContainer implements ServiceContainerInterface{
 		
 		$resParams = [];
 		foreach ($refParameters as $i => $refParameter){			
-			if($refParameter->isVariadic()){
-				var_dump($params);
+			if($refParameter->isVariadic()){				
 				$resParams = array_merge($resParams, $params);
 				break;
 			}

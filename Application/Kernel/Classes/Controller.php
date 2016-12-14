@@ -93,7 +93,7 @@ abstract class Controller implements ControllerInterface {
 	 */
 	public function getViewNamespace(): string
 	{
-		return str_replace('\\', '_', $this->className);
+		return $this->className;
 	}
 	
 	

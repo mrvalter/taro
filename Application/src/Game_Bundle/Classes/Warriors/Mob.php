@@ -1,9 +1,11 @@
 <?php
 
-namespace Game_Bundle\Classes\Mobs;
+namespace Game_Bundle\Classes\Warriors;
 
 
 class Mob extends Warrior {
 	
 	private $type;
+	private $isAggressive;
+	
 }

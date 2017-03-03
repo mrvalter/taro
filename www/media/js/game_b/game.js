@@ -68,7 +68,7 @@ class GManager
         console.log(el, type, value);
         switch(type){
             case 'html':
-                el.html(value);
+                $(el).html(value);
                 break;
         }
     }
@@ -92,7 +92,7 @@ $(window).on('load', function() {
     
     $('[data-html]').each(function() {                
         let arrEntities = $(this).data('html').split('.');
-        gManager.addHtmlTag(arrEntities[0], arrEntities[1], $(this), 'html');
+        gManager.addHtmlTag(arrEntities[0], arrEntities[1], this, 'html');
         $(this).removeAttr('data-html');
     });
     

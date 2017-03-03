@@ -1,4 +1,19 @@
+<html>
+    <head>
+		<script src="/media/bower/jquery/dist/jquery.min.js"></script>
+        <script src="/media/js/game_b/game.js"></script>
+    </head> 
+   
+	<body>
+		<span data-html="Character.name"></span>
+		<span data-html="Character.name"></span>
+		<div data-html="Character.sex"></div>
+	</body>
+</html>	
+
+
 <?php
+die();
 setlocale(LC_ALL, 'ru_RU.utf8');
 
 	

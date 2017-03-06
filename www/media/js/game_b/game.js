@@ -78,27 +78,22 @@ class AutoSWManager
     }        
         
     addEntity(entity)
-    {
-        const entityName = entity.constructor.name;				        
-        this.entities[entityName] = entity;
-		
+    {        		
 		for (let ePropertyName in entity){
-			if(ePropertyName.indexOf('_') !== 0){
-				continue;
-			}
-			
-			let propertyName = ePropertyName.substr(1);
-			
-			Object.defineProperty(entity, propertyName, { 
-				set: function (value) {                    
-						this['_'+propertyName] = value;
-						this.runCallback(propertyName, value);
-				},
+			if(entity.hasOwnProperty(ePropertyName) && ePropertyName.indexOf('_') === 0){										
+				let propertyName = ePropertyName.substr(1);
 
-				get: function () {                     
-						return this['_'+propertyName];
-				},
-			});		
+				Object.defineProperty(entity, propertyName, { 
+					set: function (value) {                    
+							this['_'+propertyName] = value;
+							this.runCallback(propertyName, value);
+					},
+
+					get: function () {                     
+							return this['_'+propertyName];
+					},
+				});		
+			}
 		}
 		
 		entity._callbacks = {};
@@ -115,6 +110,9 @@ class AutoSWManager
 				callback(value);				
 			}
 		};
+		
+		const entityName = entity.constructor.name;				        
+        this.entities[entityName] = entity;
     }
 	
     addEvent(eventName, callback){
@@ -199,3 +197,4 @@ class Character
 		this._maxMana = maxMana;
     }        
 };
+

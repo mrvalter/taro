@@ -2,185 +2,200 @@ class AutoSWManager
 {
     constructor()
     {        
-        this.tags = {};
-		this.entities = {};
-		this.events = {};
-		this.DOMParse();
+        this.tags = [];
+        this.entities = {};
+        this.events = {};
+		
+        this.DOMParse();
     }                  
     
-	getEntityByName(name)
-	{
-		return this.entities[name];		
-	}
+    getEntityByName(name)
+    {
+        return this.entities[name];		
+    }
 	
-	DOMParse()
-	{
-		var autoSwmanager = this;
-		$('[data-sw]').each(function() {		
-				
-			let jsParts = $(this).data('sw').split(',');
+    DOMParse()
+    {
+        var autoSwmanager = this;
+        $('[data-sw]').each(function() {		
 
-			switch(jsParts[0].trim()){
+        let jsParts = $(this).data('sw').split(',');
 
-				case 'value':
-					if(jsParts[1] !== undefined){
-						let entitiesParts = jsParts[1].split('.');					
-						autoSwmanager.addHtmlTag(entitiesParts[0].trim(), entitiesParts[1].trim(), this, 'value');
-					}
-					break;
+        switch(jsParts[0].trim()){
 
-				case 'event':
-					if(jsParts[1] === undefined || jsParts[2] === undefined){
-						console.error('data-sw event must have 3 attributes');
-					}
+            case 'value':
+                if(jsParts[1] !== undefined){
+                    let entitiesParts = jsParts[1].split('.');					
+                    autoSwmanager.addHtmlTag(entitiesParts[0].trim(), entitiesParts[1].trim(), this, 'value');
+                }
+                break;
 
-					let callbackName = jsParts[1];
-					let entitiesParts = jsParts[2].split('.');
-					autoSwmanager.addHtmlTag(entitiesParts[0].trim(), entitiesParts[1].trim(), this, 'event', callbackName.trim());
-					break;
-			}
+            case 'event':
+                if(jsParts[1] === undefined || jsParts[2] === undefined){
+                    console.error('data-sw event must have 3 attributes');
+                }
 
-			$(this).removeAttr('data-js');
-		});
-		
-		return this;
-	}
+                let callbackName = jsParts[1];
+                let entitiesParts = jsParts[2].split('.');
+                autoSwmanager.addHtmlTag(entitiesParts[0].trim(), entitiesParts[1].trim(), this, 'event', callbackName.trim());
+                break;
+        }
+
+            $(this).removeAttr('data-sw');
+        });
+
+        return this;
+    }
+	
+	replaceHtmlValuesByPropertyName(value, element)
+    {    		
+        element.html(value);        
+    }
 	
     addHtmlTag(entityName, propertyName, el, dataType, callbackName)
-    {		
+    {
 		
-		if(this.tags[entityName] === undefined){
-			this.tags[entityName] = {};
-		}
+        if(this.tags[entityName] === undefined){
+                this.tags[entityName] = {};
+        }
 		
         if(this.tags[entityName][propertyName] === undefined){
-			this.tags[entityName][propertyName] = [];
-		}				        
+                this.tags[entityName][propertyName] = [];
+		}
 
 		var jqel = $(el);
-        this.tags[entityName][propertyName].push({
+		
+		this.tags.push({
+		   entity: entityName,
+		   property: propertyName,
            element : jqel,
            type: dataType,
-		   callback: callbackName
+		   callbackName: callbackName,
+		   depending: 0
         });
-		
-		return this;
-    }
-    
-    replaceHtmlValuesByPropertyName(value, element)
-    {    		
-		element.html(value);        
-    }
+		                
+        return this;
+    }        
         
-	addEntity(entity)
+    addEntity(entity)
     {
-        const entityName = entity.constructor.name;
-				
-		/* Смотрим все теги которые описаны в html */
-		if(this.tags[entityName] === undefined){
-			return this;
-		}
-		this.entities[entityName] = entity;							
+        const entityName = entity.constructor.name;				        
+        this.entities[entityName] = entity;
 		
+		for (let ePropertyName in entity){
+			if(ePropertyName.indexOf('_') !== 0){
+				continue;
+			}
+			
+			let propertyName = ePropertyName.substr(1);
+			
+			Object.defineProperty(entity, propertyName, { 
+				set: function (value) {                    
+						this['_'+propertyName] = value;
+						this.runCallback(propertyName, value);
+				},
+
+				get: function () {                     
+						return this['_'+propertyName];
+				},
+			});		
+		}
+		
+		entity._callbacks = {};
+		
+		entity.runCallback = function(propertyName, value){
+			if(this._callbacks[propertyName] === undefined){
+				return true;
+			}
+			
+			for(let callback of this._callbacks[propertyName]){
+				if(typeof callback !== 'function'){
+					continue;
+				}
+				callback(value);				
+			}
+		};
     }
 	
-	addEvent(eventName, callback){
-		this.events[eventName] = callback;
-	}
+    addEvent(eventName, callback){
+        this.events[eventName] = callback;
+    }
 	
-	buildDependencies()
-	{
-		var gmanager = this;
-		for (let entityName in this.entities){			
+    buildDependencies()
+    {
+        var gmanager = this;
+                  
+		for(let tag of this.tags){
+			let entityName = tag.entity;
+			let propertyName = tag.property;
+			
+			if(this.entities[entityName] === undefined || this.entities[entityName]['_'+propertyName] === undefined){
+				continue;
+			}
+			  
 			var entity = this.entities[entityName];
 			
-			for(let oPropName in entity){						
-				if(oPropName.indexOf("_") !== 0){
-					continue;
-				}
-
-				let propertyName = oPropName.substr(1);
-
-				if(this.tags[entityName] === undefined || this.tags[entityName][propertyName] === undefined || this.tags[entityName][propertyName].length === 0){
-					Object.defineProperty(entity, propertyName, { 
-						set: function (x) {                    
-							this['_'+propertyName] = x;						
-						},
-
-						get: function () {                     
-							return this['_'+propertyName];
-						},
-					});
-					continue;
-				}
-
-				let callbacks = [];
-
-				for (let tag of this.tags[entityName][propertyName]){					
-					switch(tag.type){
-						case 'value':
-							
-							callbacks.push(function(){gmanager.replaceHtmlValuesByPropertyName(entity['_'+propertyName], tag.element)});
-							
-							break;
-
-						case 'event':	
-							callbacks.push(function(val){
-								return gmanager.events[tag.callback] !== undefined ? gmanager.events[tag.callback](tag.element, val, gmanager) : function(){};
-							});
-							
-							break;
-
-					}								
-
-					tag.element.removeAttr('data-sw');
-
-				}			
-				
-				Object.defineProperty(entity, propertyName, { 
-					set: function (x) {                    
-						this['_'+propertyName] = x;					
-						for(let callback of callbacks){
-							callback(x);
-						}
-
-					},
-
-					get: function () {                     
-						return this['_'+propertyName];
-					},
-				});								
-			}
-		}
-	}
-	
-	draw(){
-		
-		this.buildDependencies();
-		
-		for (let entity in this.tags){
 			
-			for (let property in this.tags[entity]){
-				
-				for(let tag of this.tags[entity][property]){
-					if(typeof tag.callback === 'function' && this.entities[entity] !== undefined && this.entities[entity][property] !== undefined){
-						console.log(entity, property);
-						tag.callback(this.entities[entity][property]);
-					}
-				}
+			let callback = '';
+
+			switch(tag.type){
+				case 'value':
+					callback = function(){gmanager.replaceHtmlValuesByPropertyName(entity['_'+propertyName], tag.element)};
+					break;
+
+				case 'event':	
+					callback = function(val){
+						return gmanager.events[tag.callbackName] !== undefined ? gmanager.events[tag.callbackName](tag.element, val, gmanager) : true;
+					};
+
+					break;
+			}							
+			
+			tag.depending = 1;
+			
+			if(typeof callback !== 'function'){
+				continue;
 			}
-		}
-	}
+			
+			tag.callback = callback;
+			
+			if(entity._callbacks[propertyName] === undefined){
+				entity._callbacks[propertyName] = [];
+			}
+
+			entity._callbacks[propertyName].push(callback);			
+			tag.element.removeAttr('data-sw');                			
+						
+		}        		
+    }
+	
+    draw(){
+		
+        this.buildDependencies();
+		
+		
+        for (let tag of this.tags){
+                        
+			if(typeof tag.callback === 'function' && this.entities[tag.entity] !== undefined && this.entities[tag.entity][tag.property] !== undefined){
+				console.log(tag.entity, tag.property);
+				tag.callback(this.entities[tag.entity][tag.property]);
+			}
+                        
+        }
+		
+		this.tags = [];
+    }
 };
 
 class Character
 {
-    constructor(id, name, sex, health, maxHealth, mana) {        
+    constructor(id, name, sex, health, maxHealth, mana, maxMana) {        
         this._id = id;
         this._name = name;
         this._sex = sex;
-		this._health = health;
-		this._maxHealth = maxHealth;
-		this._mana = mana;
+        this._health = health;
+        this._maxHealth = maxHealth;
+        this._mana = mana;
+		this._maxMana = maxMana;
     }        
 };

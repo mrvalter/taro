@@ -39,8 +39,9 @@ services:
   viewer:
     class: Kernel\Services\Viewer\Vi
     params:
-        cache: %App%/cache/kernel/vi
-        layoutPath: %App%/layouts
+        params:
+            cache: %App%/cache/kernel/vi
+            layoutPath: %App%/layouts
 
   database:
     class: Kernel\Services\DB

@@ -14,21 +14,23 @@ class Vi implements ViewInterface {
 	public $layout;
 	public $charset;
 	public $lang;
+	public static $title;
 	
 	private $pathes;
+	private static $parent;
 	private static $blocks;
 	private static $blocksBegin;
 	
-	public function __construct(... $params)
+	
+	public function __construct($params)
 	{
 		
 		$this->charset = $params['charset']?? self::defaultCharset;
 		$this->layout = $params['layout']?? self::defaultLayout;
 		$this->lang = $params['lang']?? self::defaultLang;
 		if(isset($params['layoutPath'])){
-			$this->addTemplatePath($params['layoutPath'], '@layout');
-		}
-		
+			$this->addTemplatePath($params['layoutPath'], 'layouts');
+		}						
 	}	    
     
     private function getFileByTemplateName(&$template)
@@ -42,10 +44,11 @@ class Vi implements ViewInterface {
 		}else {
 			$templateName = $template.$this->getFileExtension();
 		}
-		
+				
 		if($namespace && !isset($this->pathes['namespace'][$namespace])){
 			throw new \ViException("Не найден путь к шаблону $template");
 		}
+		
 		$file = '';
 		foreach($this->pathes['namespace'][$namespace] as $path){
 			if(file_exists($path.'/'.$templateName)){
@@ -55,7 +58,7 @@ class Vi implements ViewInterface {
 		}
 		
 		if(!$file){
-			throw new \ViException("Не найден файл темпдейта $template");
+			throw new \ViException("Не найден файл темплейта $template");
 		}
 		
 		return $file;
@@ -137,17 +140,25 @@ class Vi implements ViewInterface {
 	
 	public function render(string $template, array $params=[], string $namespace = ''): string
 	{
-		
-		$file = $this->getFileByTemplateName($template);
+
+		$file = $this->getFileByTemplateName($template);		
 		ob_start();
-		extract($params);
+		if(!empty($params)){
+			extract($params);
+		}
 		include $file;
 		$html = ob_get_contents();		
 		ob_clean();
 		
-		echo $html;
-				
+		var_dump(self::$blocks);		
+		if(self::$parent){			
+			$parentTemplate = self::$parent;
+			self::$parent = null;
+			$this->render($parentTemplate);
+		}		
+
 		var_dump(self::$blocks);
+		var_dump('dddd');
 		return 'ddd';
 	}
 	
@@ -161,14 +172,14 @@ class Vi implements ViewInterface {
 	public static function endBlock()
 	{
 		$block = array_pop(self::$blocksBegin);
-		self::$blocks[$block[0]] = ['html' => ob_get_contents(), 'parent'=>$block[1]];
+		self::$blocks[$block[0]][] = ['html' => ob_get_contents(), 'parent'=>$block[1]];
 		ob_clean();
 		
 	}
 	
 	public static function extend($name)
 	{
-		
+		self::$parent = $name;
 	}
 	
 }

@@ -1,9 +1,10 @@
+<?namespace Kernel\Services\Viewer;?>
 <!DOCTYPE html>
 <html>
     <head>
 		<? Vi::beginBlock('head'); ?>
         <meta charset="utf-8" />
-        <title><? Vi::title ?></title>
+        <title><?= Vi::$title ?></title>
         <script src="/media/bower/jquery/dist/jquery.min.js"></script>
         <script src="/media/bower/bootstrap/dist/js/bootstrap.min.js"></script>
         <link href="/media/bower/components-font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
@@ -14,7 +15,7 @@
    
 	<body>
 	   <div id="main_menu" style="width: 200px; position: absolute;">		
-		<? Vi::widget('/widgets/menu/leftmenu') ?>
+		<? //Vi::widget('/widgets/menu/leftmenu') ?>
 	   </div>
         <div class="page-wrapper">
             <header></header>

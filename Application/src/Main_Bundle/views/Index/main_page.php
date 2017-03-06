@@ -1,7 +1,6 @@
 <?namespace Kernel\Services\Viewer;?>
 <?$name = '<script>alert("ALERT SCRIPT");</script>'?>
 <?Vi::extend('@layouts/default.layout') ?>
-<?Vi::extend('@main_index/default.layout') ?>
 
 <?Vi::beginBlock('head', true)?>
 	

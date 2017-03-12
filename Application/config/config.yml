@@ -54,3 +54,11 @@ services:
             encoding: UTF8
             driver:   mysql
             dbname:   medcrm
+          mongodb:
+            host:     localhost
+            user:     gamerdb
+            password: ghbdtn
+            encoding: UTF8
+            driver:   mongoDB
+            dbname:   game
+            port: 27017

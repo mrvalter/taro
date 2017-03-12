@@ -36,9 +36,8 @@ class LocalRoute extends Route{
 		
 		try {
 
-			$controllerClass = $this->findController($this->uri);
-			
-			if($this->checkAccess($this->uri)){			
+			$controllerClass = $this->findController($this->uri);			
+			if($this->checkAccess($this->uri)){
 				$params = array_slice($this->uri->getPathParts(), 2);
 				return $this->runController($controllerClass, $params);
 			}
@@ -61,10 +60,10 @@ class LocalRoute extends Route{
 				$firewall->getPathBySystemCode($code), 
 				$message, 
 				$systemMessage
-			);
+			);			
 			
 		}catch(\AppException $ex){
-			
+			var_dump($ex);
 			$message = $ex->getMessage();
 			$systemMessage = $ex->getSysMessage();
 			$this->response = $this->response->withStatus(503, $message, $systemMessage);
@@ -87,7 +86,7 @@ class LocalRoute extends Route{
 		$actionName   = $params[0] ?? Controller::defaultActionName;
 		$actionMethod = $actionName . Controller::actionPostfix;
 				
-		$refController = new \ReflectionClass($controllerClass);		
+		$refController = new \ReflectionClass($controllerClass);				
 		
 		if(!$refController->hasMethod($actionMethod)){
 			if(!$refController->isSubclassOf('Kernel\Classes\ModuleController')){
@@ -122,10 +121,10 @@ class LocalRoute extends Route{
 		}
 		
 		
-		$refMethod = $refController->getMethod($actionMethod);				
+		$refMethod = $refController->getMethod($actionMethod);			
 		$callableParams = $this->getCallableParams($refMethod, $params);
 				
-		$oController = new $controllerClass($this->serviceContainer, $this->request);
+		$oController = new $controllerClass($this->serviceContainer, $this->request);				
 		
 		$html = $refMethod->invokeArgs($oController, $callableParams);
 		

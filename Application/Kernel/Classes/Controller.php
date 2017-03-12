@@ -101,6 +101,7 @@ abstract class Controller implements ControllerInterface {
 	{
 		return $this->serviceContainer->get('viewer');
 	}
+	
     /**
      * Возвращает объект PDO
      */
@@ -109,6 +110,14 @@ abstract class Controller implements ControllerInterface {
 		return $this->getService('database')->getDBConn($db)->getPdo();
     }
 
+	/**
+	 * Возвращает линк соединения с БД
+	 */
+	final protected function getConn(string $db)
+    {
+		return $this->getService('database')->getDBConn($db)->getLink();
+    }
+	
 	
     /**
      * Возвращает объект авторизовавшегося Пользователя
@@ -149,37 +158,14 @@ abstract class Controller implements ControllerInterface {
     public function getRequest()
     {
         return $this->get('router')->getRequest();
-    }        		
-    
-    /**
-     * 
-     * @param string $title
-     * @return \Classes\Controller
-     */
-    public function setTitle($title)
-    {
-        $this->getView()->setTitle($title);
-        return $this;
-
-    }
-    
-    /**
-     * Устанавливает Layout страницы
-     * @param type $name
-     * @return \Classes\Controller
-     */
-    public function setLayout($name)
-    {
-        $this->getView()->setLayout($name);
-        return $this;
-    }        
+    }        		                       
     
     /**
      * 
      * @param MenuCollection $menuCollection
      * @return \Classes\Controller
      */
-    public function setRights(MenuItem $menuItem)
+    public function setRights(MenuItem $menuItem): self
     {		
             $this->rights = $menuItem;
             return $this;
@@ -192,9 +178,10 @@ abstract class Controller implements ControllerInterface {
      * 
      * @param string $alert
      */
-    public function setDanger($alert)
+    public function setDanger($alert): self
     {        
         \App::setDanger($alert);
+		return $this;
     }
     
     /**
@@ -204,9 +191,10 @@ abstract class Controller implements ControllerInterface {
      * 
      * @param string $message
      */
-    public function setMessage($message)
+    public function setMessage($message): self
     {        
-        \App::setMessage($message);        
+        \App::setMessage($message);
+		return $this;
     }
     
     /**
@@ -216,9 +204,10 @@ abstract class Controller implements ControllerInterface {
      * 
      * @param string $warning
      */
-    public function setWarning($warning)
+    public function setWarning($warning): self
     {        
-        \App::setWarning($warning);        
+        \App::setWarning($warning);  
+		return $this;
     }                              
 	
     /**
@@ -226,7 +215,7 @@ abstract class Controller implements ControllerInterface {
      * @param string $optionName Option name
      * @return boolean
      */
-    protected function checkRightW($optionName='')
+    protected function checkRightW($optionName=''): bool
     {
 		if(null === $this->rights){
 				return false;
@@ -240,7 +229,7 @@ abstract class Controller implements ControllerInterface {
 		return strtoupper($this->rights->getRight()) == 'W';
     }
 
-    protected function checkRightR($optionName='')
+    protected function checkRightR($optionName=''): bool
     {
 		if(null === $this->rights){
 				return false;
@@ -270,7 +259,7 @@ abstract class Controller implements ControllerInterface {
     * @param array $params параметры
     * @return \Services\View
     */
-    public function render(string $template, array $params=[]):string
+    public function render(string $template, &$params=[]):string
     {
 		if($this->request->isAjax()){
 			$templateFile = $this->getTemplatesPath().'/'.$template.$this->getViewer()->getFileExtension();
@@ -288,7 +277,7 @@ abstract class Controller implements ControllerInterface {
 			return $template->render($params);
 		}
 		
-        return $this->getViewer()->render('@'.$this->getViewNamespace().'/'.$template, $params);
+        return $this->getViewer()->render($template, $params, $this->getViewNamespace());
     }
     
     /**

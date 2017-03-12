@@ -47,7 +47,12 @@ abstract class Repository {
     public function getPDOFrom($name)
     {
         return $this->getDbConn($name)->getPDO();
-    }		
+    }
+
+	public function getConnFrom($name)
+	{
+		return $this->getDbConn($name)->getLink();
+	}
 	
 	
     public function _makeObjects(PDOStatement $stmt, $entityName)

@@ -18,8 +18,9 @@ class FirewallController extends Controller{
 	
 	public function authorizeAction()
 	{
-		$canRegistration = $this->getService('firewall')->canRegistration();		
-		return $this->render('login_form', ['canRegistration'=>$canRegistration]);
+		$canRegistration = $this->getService('firewall')->canRegistration();	
+		var_dump($this->render('login_form', ['canRegistration'=>$canRegistration]));		
+		die();
 	}
 	
 	public function registrationAction()

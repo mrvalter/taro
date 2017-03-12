@@ -25,5 +25,10 @@ class MysqlDriver extends DBConnect {
         $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
         $pdo->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('Kernel\Services\DB\Statement', array($pdo)));
 		return $pdo;
-	}		
+	}
+	
+	protected function createLink()
+	{
+		return null;
+	}
 }

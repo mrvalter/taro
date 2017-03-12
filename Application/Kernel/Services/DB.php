@@ -48,7 +48,7 @@ class DB {
 			$port     = isset($config[$name]['port'])     ? $config[$name]['port']     : '';			
 			
 			$class = '\\Kernel\\Services\\DB\\'.ucfirst($driver).'Driver';			
-			return self::$dbs[$name] = new $class($user, $password, $host, $encoding, $dbname);
+			return self::$dbs[$name] = new $class($user, $password, $host, $encoding, $dbname, $port);
 		}
 		
 		throw new \DBException('Конфиг базы данных с индексом "'.$name.'" не найден');

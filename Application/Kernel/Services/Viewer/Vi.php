@@ -4,55 +4,44 @@ namespace Kernel\Services\Viewer;
 use Kernel\Interfaces\ViewInterface;
 use Kernel\Services\FileDataStorage;
 
-class Vi implements ViewInterface {
+class Vi implements ViewInterface{
 	
-	const fileExtension = '.php';
-	const defaultLayout = 'default.layout';
-	const defaultCharset = 'UTF-8';
-	const defaultLang = 'ru';
-	
-	public $layout;
-	public $charset;
-	public $lang;
-	public static $title;
-	
-	private $pathes;
-	private static $parent;
-	private static $blocks;
-	private static $blocksBegin;
-	
+	const fileExtension = '.php';						
+	private $pathes;				
+	private $viLayout;
 	
 	public function __construct($params)
-	{
+	{	
+		$this->pathes['simple'] = [];
 		
-		$this->charset = $params['charset']?? self::defaultCharset;
-		$this->layout = $params['layout']?? self::defaultLayout;
-		$this->lang = $params['lang']?? self::defaultLang;
 		if(isset($params['layoutPath'])){
 			$this->addTemplatePath($params['layoutPath'], 'layouts');
-		}						
+		}		
+		
+		$this->viLayout = new ViLayout();
 	}	    
     
-    private function getFileByTemplateName(&$template)
-	{
-		$namespace = '';
+	/**
+	 * 
+	 * @param string $template
+	 * @param string $namespace
+	 * @return string
+	 * @throws \ViException
+	 */
+    private function getFileByTemplateName(string $template, string $namespace=''): string
+	{						
 		
-		if(substr($template, 0, 1) == '@'){
-			$templateParts = explode('/', $template);
-			$namespace = substr($templateParts[0], 1);
-			$templateName = $templateParts[1].$this->getFileExtension();
-		}else {
-			$templateName = $template.$this->getFileExtension();
-		}
-				
 		if($namespace && !isset($this->pathes['namespace'][$namespace])){
-			throw new \ViException("Не найден путь к шаблону $template");
+			throw new \ViException("Не назначен путь для неймспейса $namespace");
 		}
+		
+		$template .= self::fileExtension;
+		$pathes = $namespace ? $this->pathes['namespace'][$namespace] : $this->pathes['simple'];
 		
 		$file = '';
-		foreach($this->pathes['namespace'][$namespace] as $path){
-			if(file_exists($path.'/'.$templateName)){
-				$file = $path.'/'.$templateName;
+		foreach($pathes as $path){		
+			if(file_exists($path.'/'.$template)){
+				$file = $path.'/'.$template;
 				break;
 			}
 		}
@@ -65,72 +54,18 @@ class Vi implements ViewInterface {
 		
 	}
 	
-    public function getFileExtension()
+    public function getFileExtension(): string
 	{
 		
 		return self::fileExtension;
 	}
-    
-    public function getLayout()
-	{
-		
-		return $this->layout;
-	}
-    
-    /**
-     * Возвращает название текущей кодировки
-     * @return string;
-     */
-    public function getCharset()
-	{
-		
-		return $this->charset;
-	}
-            
-    /**
-     * Возвращает название текущего языка
-     * @return string;
-     */
-    public function getLang()
-	{
-		
-		return $this->lang;
-	}
-            
-    public function setLayout($layoutName)
-	{
-		$this->layout = $layoutName;
-	}
-    
-    /**
-     * Устанавливает кодировку страницы в шапке
-     * @param string $charset
-     * @return \ViewInterface
-     */
-    public function setCharset($charset)
-	{
-		
-		$this->charset = $charset;
-	}
-    
-    /**
-     * Устанавливает язык страницы в шаблоне.  <html lang="ru">
-     * @param string $lang
-     * @return \ViewInterface
-     */
-    public function setLang($lang)
-	{
-		
-		$this->lang = $lang;
-	}
-    
-	
+        
     public function addTemplatePath($path, $namespace = ''): self
 	{
 		$namespace = trim($namespace);
 		
 		if(($namespace)){
-			$this->pathes['namespace'][$namespace][] = $path;
+			$this->pathes['namespace'][strtolower($namespace)][] = $path;
 		}else{
 			$this->pathes['simple'][] = $path;
 		}
@@ -138,51 +73,74 @@ class Vi implements ViewInterface {
 		return $this;		
 	}
 	
-	public function render(string $template, array $params=[], string $namespace = ''): string
-	{
+	public function render(string $template, array &$params=[], string $namespace = ''): string
+	{															
+		
+		$this->createExtendsContent($template, $namespace);
+		
+		var_dump($this->viLayout);
+		die();
+	}
 
-		$file = $this->getFileByTemplateName($template);		
-		ob_start();
-		if(!empty($params)){
-			extract($params);
+	
+	
+	public function createLayoutObject()
+	{
+		
+	}
+	
+	private function createExtendsContent(string $template, string $namespace='')
+	{
+		
+		$namespace = strtolower(trim($namespace));		
+		$file = file_get_contents($this->getFileByTemplateName($template, $namespace));
+		
+		$pNamespace = '';
+		$pTemplate = '';
+		if(preg_match('~{extends([^}]+)}~', $file, $extends)){			
+			$templateStr = trim($extends[1]);			
+			if(strpos($templateStr, '@')){
+				list($pNamespace, $pTemplate) = explode('@', $templateStr);				
+			}else{
+				$pTemplate = $templateStr;
+			}
 		}
-		include $file;
-		$html = ob_get_contents();		
-		ob_clean();
 		
-		var_dump(self::$blocks);		
-		if(self::$parent){			
-			$parentTemplate = self::$parent;
-			self::$parent = null;
-			$this->render($parentTemplate);
-		}		
-
-		var_dump(self::$blocks);
-		var_dump('dddd');
-		return 'ddd';
-	}
-	
-	public static function beginBlock(string $name, bool $includeParent = false)
-	{
-		self::$blocksBegin[] = [$name, $includeParent];
-		ob_start();
+		if(!$pTemplate){
+			$this->viLayout->setLayout($file);
+			return true;
+		}
+		
+		$blocks = [];
+		if(preg_match_all('~{block([^}/]+)}(.*?){\/block}~uis', $file, $blocks)){
+			foreach($blocks[1] as $i=>$params){
+				$params = trim($params);
+				$blockParams = explode(' ', $params);				
+				$replace = isset($blockParams[1]) && $blockParams[1] === 'add' ? false : true;
+				$block = new ViBlock($blockParams[0], $blocks[2][$i], !$replace);				
+				$this->viLayout->addBlock($block);
+				
+			}
+		}
+		
+		$eblocks = [];
+		if(preg_match_all('~{block([^}]+)\/}~uis', $file, $eblocks)){
+			foreach($eblocks[1] as $i=>$params){
+				$params = trim($params);
+				$blockParams = explode(' ', $params);
+				$replace = isset($blockParams[1]) && $blockParams[1] === 'add' ? false : true;
+				if($replace){
+					$block = new ViBlock($blockParams[0], '', !$replace);
+					$this->viLayout->addBlock($block);
+				}								
+			}
+		}
+		
+		return $this->createExtendsContent($pTemplate, $pNamespace);
 		
 	}
-	
-	public static function endBlock()
-	{
-		$block = array_pop(self::$blocksBegin);
-		self::$blocks[$block[0]][] = ['html' => ob_get_contents(), 'parent'=>$block[1]];
-		ob_clean();
-		
-	}
-	
-	public static function extend($name)
-	{
-		self::$parent = $name;
-	}
-	
 }
+
 
 
 function e($string)

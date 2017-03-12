@@ -68,7 +68,7 @@ class Item {
 	private $increaseModifiers = null;
 	private $activeModifiers   = null;
 
-	public function __construct(\PDORow $params = null)
+	public function __construct($params = null)
 	{
 		$this->id                = $params->id ?? null;
 		$this->parentId          = $params->parentId ?? null;

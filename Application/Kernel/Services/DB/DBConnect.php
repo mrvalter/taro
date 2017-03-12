@@ -55,7 +55,7 @@ abstract class DBConnect {
      */
     public function getLink()
     {        
-        if(null === $this->link){
+        if(null === $this->_link){
             $this->_link = $this->createLink();
         }
         return $this->_link;
@@ -80,10 +80,12 @@ abstract class DBConnect {
 	
 	public function getDbName(){
 		return $this->_dbname;
-	}
-		
+	}	
+	
 	/**
 	 * @return \Services\DB\PDODriver
 	 */
-	abstract protected function createPdo();	   
+	abstract protected function createPdo();
+	abstract protected function createLink();
+		
 }

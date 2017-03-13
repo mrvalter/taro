@@ -39,7 +39,7 @@ class Vi implements ViewInterface{
 		$pathes = $namespace ? $this->pathes['namespace'][$namespace] : $this->pathes['simple'];
 		
 		$file = '';
-		foreach($pathes as $path){		
+		foreach($pathes as $path){				
 			if(file_exists($path.'/'.$template)){
 				$file = $path.'/'.$template;
 				break;
@@ -87,7 +87,7 @@ class Vi implements ViewInterface{
 	public function createLayoutObject()
 	{
 		
-	}
+	}			
 	
 	private function createExtendsContent(string $template, string $namespace='')
 	{
@@ -104,20 +104,15 @@ class Vi implements ViewInterface{
 			}else{
 				$pTemplate = $templateStr;
 			}
-		}
+		}				
 		
-		if(!$pTemplate){
-			$this->viLayout->setLayout($file);
-			return true;
-		}
-		
-		$blocks = [];
-		if(preg_match_all('~{block([^}/]+)}(.*?){\/block}~uis', $file, $blocks)){
+		$blocks = [];										
+		if(preg_match_all('~{block([^}/]+)}(.*?){\/block}~uis', $file, $blocks, PREG_OFFSET_CAPTURE)){
 			foreach($blocks[1] as $i=>$params){
-				$params = trim($params);
-				$blockParams = explode(' ', $params);				
+				$params[0] = trim($params[0]);
+				$blockParams = explode(' ', $params[0]);
 				$replace = isset($blockParams[1]) && $blockParams[1] === 'add' ? false : true;
-				$block = new ViBlock($blockParams[0], $blocks[2][$i], !$replace);				
+				$block = new ViBlock($blockParams[0], $blocks[2][$i][0], !$replace);				
 				$this->viLayout->addBlock($block);
 				
 			}
@@ -136,7 +131,7 @@ class Vi implements ViewInterface{
 			}
 		}
 		
-		return $this->createExtendsContent($pTemplate, $pNamespace);
+		return $pTemplate ? true : $this->createExtendsContent($pTemplate, $pNamespace);
 		
 	}
 }

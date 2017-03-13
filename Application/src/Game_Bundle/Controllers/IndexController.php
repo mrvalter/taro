@@ -14,6 +14,5 @@ class IndexController extends Controller{
 	{
 		
 		return $this->render('main-window');
-		
 	}
 }

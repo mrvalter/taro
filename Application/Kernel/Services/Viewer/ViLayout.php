@@ -27,12 +27,14 @@ class ViLayout {
 	
 	public function setLayout($layout)
 	{
-		$this->layout = $layout;
+		
+		$this->layout = $layout;				
 	}
 	
 	public function render()
 	{
 		
+		//PREG_OFFSET_CAPTURE
 		
 	}
 }

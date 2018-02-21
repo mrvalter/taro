@@ -151,11 +151,15 @@ abstract class Config {
 		
 	}
 	
-	static function makeConfigFromDir(string $extension, string $enviroment, $configDirPath, array $tags=[]): ConfigInterface
+	static function makeConfigFromDir(string $extension, string $enviroment, $host, $configDirPath, array $tags=[]): ConfigInterface
 	{
 		$extension = strtolower($extension);		
 		$class = self::getClassNameByExtension($extension);
-		
+		$hosts = include $configDirPath.'/hosts.php';
+		if(!isset($hosts[$host])){
+			throw new \ConfigException('Не подключен хост '.$host);
+		}
+		$configDirPath .= '/'.$hosts[$host];
 		$config = new $class([], $enviroment, $tags);		
 		$config->addFile($configDirPath.'/config.'.$extension, true);
 		if($enviroment){

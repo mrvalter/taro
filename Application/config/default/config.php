@@ -1,8 +1,9 @@
 <?php
 return  [
 	'cache_dir'    => '%App%/cache',
-	'admin_mails'  => 'fedyakinas@master',
+	'admin_mails'  => 'al.fedyakin@gmail.com',
 	'masterAdmins' => 'FedyakinAS',
+	'media'        => '/media/tl',
 
 	'services'  => [
 		#  config: Kernel
@@ -40,8 +41,9 @@ return  [
 			'class' => 'Kernel\Services\Viewer\TwigViewer',
 			'params'=>[
 				'params' => [
-					'cache: %App%/cache/kernel/vi',
-					'layoutPath: %App%/layouts'
+					'cache' => '%App%/cache/kernel/vi',
+					'layoutPath'=> '%App%/layouts',
+					'layout' => 'default.layout'
 				]
 			]
 		],

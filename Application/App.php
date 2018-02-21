@@ -69,8 +69,10 @@ class App {
 	
 	/** @var Config */
 	private $config = null;
-    
-    
+	
+	/** @var string $_SERVER['HTTP_HOST'] */
+	private $httpHost;
+        
     private function __construct()
     {
 		
@@ -171,6 +173,7 @@ class App {
      */
     public static function run($httpPath, ClassLoader $loader)
     {
+		
         if(self::$_instance!=null)
             return false;
 		
@@ -184,7 +187,8 @@ class App {
         		
         $App->setEnv(getenv('APP_ENV'))            
             ->setHttpPath($httpPath)        
-            ->setClassLoader($loader)			
+            ->setClassLoader($loader)
+			->setHttpHost($_SERVER['HTTP_HOST'])
 			->initConfig()
             ->initApplication();            
 		
@@ -206,6 +210,13 @@ class App {
         exit();
     }
     
+	public function setHttpHost(string $host): self
+	{
+		
+		$this->httpHost = $host;
+		return $this;
+	}
+			
 	/** 
 	 * Запускает приложение в режиме консоли
 	 */
@@ -249,6 +260,7 @@ class App {
 		$config = Config::makeConfigFromDir(
 				self::CONFIG_EXTENSION, 
 				$this->getEnv(),
+				$this->httpHost,
 				$this->mainConfigPath,				
 				['%App%' => $this->getAppPath()]);					
 		

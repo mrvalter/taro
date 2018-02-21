@@ -30,12 +30,5 @@ class ServiceContainer extends Kernel\Classes\ServiceContainer {
 		
 	public function __get($name){
 		return $this->get($name);
-	}
-	
-	public function Service_database()
-	{
-		
-		
-	}
-	
+	}	
 }

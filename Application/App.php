@@ -2,7 +2,10 @@
 include_once 'functions.php';
 
 use Composer\Autoload\ClassLoader as ClassLoader;
-use Kernel\Services\{Config, Router, Firewall, FileDataStorage, Console};
+use Kernel\Services\{FileDataStorage, Console};
+use Kernel\Services\Config\Config;
+use Kernel\Services\Router\Router;
+use Kernel\Services\Firewall\Firewall;
 use Kernel\Services\ServiceContainer\ServiceContainerCreator;
 use Kernel\Classes\Repository;
 
@@ -26,6 +29,18 @@ class App {
 
     /** @var string окончания девовского енвиромента, когда показываются ошибки, собирается статистика */
     const ENVIROMENT_DEV_POSTFIX = 'dev';
+	
+	/**
+	 * @var string какой тип конфига использовать (php, yml)
+	 */
+	const CONFIG_EXTENSION = 'PHP';
+	
+	const CACHE_PATH = __DIR__.'/cache/kernel';
+	
+	const CACHE_ENABLED = true;
+	
+	const CONFIG_CACHE_ENABLED = true;
+	
     
     private static $_instance = null;    
     private static $widgets=array();
@@ -49,7 +64,7 @@ class App {
     /** @var ClassLoader */
     private $classLoader;
 	        
-    /** @var \ServiceContainer Объект контейнера сервисов */
+    /** @var ServiceContainerInterface Объект контейнера сервисов */
     private $ServiceContainer = null;
 	
 	/** @var Config */
@@ -211,29 +226,42 @@ class App {
 	{		
 		$console = new Console($this->ServiceContainer, $this->httpPath);
 		$console->run();		
-	}
+	}		
 	
-	
+	/**
+	 * Инициализирует Конфиг
+	 * @return \self
+	 */
 	private function initConfig(): self
 	{
-		$cacheFile = __DIR__.'/cache/kernel/config/config_'.$this->env.'.cch';
-		if(!file_exists($cacheFile) || substr($this->env, -3)=='dev'){
-			/* Инициализируем сервис конфига */
-			$config = new Config([], $this->getEnv(),['%App%' => $this->getAppPath()]);
-			$config->addFile($this->mainConfigPath.'/config.yml', true);
-			if($this->env){
-				$config->addFile($this->mainConfigPath."/config_{$this->env}.yml", false);
-			}
-			$config->addFile($this->mainConfigPath.'/firewall.yml', true, 'firewall');				
-			$this->config = $config;
-			//FileDataStorage::touch($cacheFile, serialize($config->getValue()));
-			return $this;
+		$useCache = strtolower(self::CONFIG_EXTENSION) != 'php' 
+				&& self::CACHE_ENABLED 
+				&& self::CONFIG_CACHE_ENABLED 
+				&& substr($this->env, -3)!='dev';
+		
+		$cachePath = self::CACHE_PATH.'/config/conf_'.self::CONFIG_EXTENSION.'.cch';
+		
+		if($useCache && file_exists($cachePath)){			
+			$config = Config::makeConfigFromArray(unserialize(FileDataStorage::read($cachePath)), self::CONFIG_EXTENSION, $this->env);
+			return $config;
 		}
 		
+		$config = Config::makeConfigFromDir(
+				self::CONFIG_EXTENSION, 
+				$this->getEnv(),
+				$this->mainConfigPath,				
+				['%App%' => $this->getAppPath()]);					
 		
-		$this->config = new Config(unserialize(FileDataStorage::read($cacheFile)), $this->env);
+		if($useCache && !file_exists($cachePath)){
+			$dataStr = serialize($config->getValue());
+			FileDataStorage::touch($cachePath, $dataStr);
+		}
+		
+		$this->config = $config;
 		return $this;
 	}
+	
+	
     /**
      * @todo кешировать конфигурацию
      * Инициализация сервисов
@@ -247,17 +275,18 @@ class App {
 			$config = $this->config;
 			
             /* Подгружаем сервисы */
-            $this->ServiceContainer = new ServiceContainer($config->get('services'));
+            $this->ServiceContainer = new ServiceContainerD($config->get('services'));
+			$this->ServiceContainer->addService('config', $config, true);
+			
             Repository::setServiceContainer($this->ServiceContainer);
             Router::setServiceContainer($this->ServiceContainer);
-            
-            $this->ServiceContainer->addService('config', $config);
-            
-            $this->ServiceContainer->get('session_storage')->start();
-
+			
+			/* Стартуем сессию */
+            $this->ServiceContainer->session_storage->start();
+			
             /* Инициализируем файрволл */
-            $firewall = new Firewall($this->ServiceContainer->get('security'), $config->get('firewall'), $this->classLoader, $this->bundlesPath);
-            $this->ServiceContainer->addService('firewall', $firewall); 
+            $firewall = new Firewall($this->ServiceContainer->security, $config->get('firewall'), $this->classLoader, $this->bundlesPath);
+            $this->ServiceContainer->addService('firewall', $firewall, true);
                         
             
 
@@ -273,20 +302,7 @@ class App {
 		}	*/
 		
         return $this;		       
-    }       
-        
-    private function buildTmpRequestVars()
-    {
-        $request = self::getTmp('request');
-        if($request){
-            foreach($request as $key=>$value){
-                if(!isset($_REQUEST[$key])){
-                    $_REQUEST[$key] = $value;
-                }
-            }
-        }
-        
-    }            
+    }                            
 	
     public function mooveSessionUnreadToTmp()
     {

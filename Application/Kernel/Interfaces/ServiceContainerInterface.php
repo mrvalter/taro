@@ -13,7 +13,7 @@ namespace Kernel\Interfaces;
  * @author sworion
  */
 interface ServiceContainerInterface {
-	
-	public function get(string $name);
+		
 	public function addService(string $name, $object);
+	
 }

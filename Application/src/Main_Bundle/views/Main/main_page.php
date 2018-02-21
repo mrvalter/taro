@@ -1,4 +1,6 @@
 <?namespace Kernel\Services\Viewer;?>
+<?class Template extends Viewer {?>
+
 <?$name = '<script>alert("ALERT SCRIPT");</script>'?>
 <?Vi::extend('@layouts/default.layout') ?>
 
@@ -17,6 +19,6 @@
 
 <?Vi::endBlock();?>
 
-
+<?}?>
 
 

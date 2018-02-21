@@ -1,5 +1,5 @@
 <?php
-namespace Kernel\Services;
+namespace Kernel\Services\Logger;
 
 class Logger {		
 			

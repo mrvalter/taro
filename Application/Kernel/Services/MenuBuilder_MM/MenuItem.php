@@ -1,5 +1,5 @@
 <?php
-namespace Kernel\Services\Menu;
+namespace Kernel\Services\MenuBuilder_MM;
 use Kernel\Services\Security\Interfaces\{MenuCollectionInterface, MenuItemInterface, UserInterface};
 
 class MenuItem implements MenuItemInterface{    	

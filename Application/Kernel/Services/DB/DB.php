@@ -47,7 +47,7 @@ class DB {
 			$driver   = isset($config[$name]['driver'])   ? $config[$name]['driver']   : 'mysql';
 			$port     = isset($config[$name]['port'])     ? $config[$name]['port']     : '';			
 			
-			$class = '\\Kernel\\Services\\DB\\'.ucfirst($driver).'Driver';			
+			$class = '\\Kernel\\Services\\DB\\Drivers\\'.ucfirst($driver).'Driver';			
 			return self::$dbs[$name] = new $class($user, $password, $host, $encoding, $dbname, $port);
 		}
 		

@@ -1,9 +1,9 @@
 <?php
-namespace Kernel\Services;
-use ServiceContainer;
+namespace Kernel\Services\Router;
+use Kernel\Interfaces\ServiceContainerInterface;
 use Kernel\Interfaces\{FirewallInterface, ControllerInterface};
 use Kernel\Interfaces\RouteInterface;
-use Kernel\Services\Firewall;
+use Kernel\Services\Firewall\Firewall;
 use Kernel\Services\HttpFound\{ServerRequest, Response, Request, Uri};
 use Kernel\Services\Config;
 use Kernel\Services\Router\{LocalRoute, CurlRoute, ResponseRoute};
@@ -53,7 +53,7 @@ class Router {
      * 
      * @param FirewallInterface $firewall
      */
-    public static function setServiceContainer(ServiceContainer $container)
+    public static function setServiceContainer(ServiceContainerInterface $container)
     {
         if(self::$serviceContainer === null){
 			self::$serviceContainer = $container;
@@ -66,7 +66,7 @@ class Router {
      */    
     public static function createFromGlobals(): RouteInterface
     {     		
-        $firewall = self::$serviceContainer->get('firewall');
+        $firewall = self::$serviceContainer->firewall;
 		$request = $firewall->verifyRequest(ServerRequest::fromGlobals());
         return self::$routes[] = self::createRoute($request);
     }

@@ -4,11 +4,11 @@
  * @autor Fedyakin Alexander
  * @copyright (c) 2015, Materia Medica Group
  */
-namespace Kernel\Services\DB;
+namespace Kernel\Services\DB\Drivers;
 /**
  * @category MED CRM
  */
-class SqlsrvDriver extends DBConnect {
+class DblibDriver extends DBConnect {
 		
 
 	protected function createPDO()
@@ -16,17 +16,18 @@ class SqlsrvDriver extends DBConnect {
 		$options = [
 			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
 		];
-		  
-		$pdo = new \PDO("sqlsrv:Server=".$this->_host.";Database=".$this->_dbname, $this->_user, $this->_password);		  	
+		$str = 'dblib:host='.$this->_host.
+				($this->_port ? ':'.$this->_port : '').';charset='.$this->_encoding.';dbname='.$this->_dbname;
+			
+        $pdo = new PDODriver($str, $this->_user, $this->_password, $options);
         $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
-		
 		return $pdo;
 	}
 	
 	protected function createLink()
 	{
 		$dbcnx = @mssql_connect($this->_host.':'.$this->_port,$this->_user,$this->_password);
-		if (!$dbcnx) {
+		if (!$dbcnx) {     
 			throw new \DBException("Connect failed: %s\n", mssql_get_last_message());
 		} 
 

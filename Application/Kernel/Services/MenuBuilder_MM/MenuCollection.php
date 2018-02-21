@@ -1,6 +1,6 @@
 <?php
 
-namespace Kernel\Services\Menu;
+namespace Kernel\Services\MenuBuilder_MM;
 use Kernel\Classes\Types\ObjectsCollection;
 use Kernel\Services\Security\Interfaces\{MenuCollectionInterface, MenuItemInterface};
 

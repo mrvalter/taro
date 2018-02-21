@@ -8,7 +8,8 @@ namespace Kernel\Classes;
 
 //use Kernel\Services\Interfaces\ViewInterface;
 use Kernel\Services\HttpFound\Request;
-use Kernel\Services\{Router, Firewall, HttpFound\Uri, DB\PDODriver};
+use Kernel\Services\{Router, HttpFound\Uri, DB\PDODriver};
+use Kernel\Services\Firewall\Firewall;
 use Kernel\Interfaces\{ControllerInterface, ViewInterface};
 use Kernel\Services\Security\Interfaces\UserInterface;
 use Psr\Http\Message\RequestInterface;
@@ -99,7 +100,7 @@ abstract class Controller implements ControllerInterface {
 	
 	public function getViewer(): ViewInterface
 	{
-		return $this->serviceContainer->get('viewer');
+		return $this->serviceContainer->viewer;
 	}
 	
     /**

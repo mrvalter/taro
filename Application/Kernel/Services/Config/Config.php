@@ -2,26 +2,32 @@
 /**
  * @autor Fedyakin Alexander
  */
+namespace Kernel\Services\Config;
 
-namespace Kernel\Services;
+use Kernel\Interfaces\ConfigInterface;
 
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Класс конфигурации приложения
  */
-class Config {                       
-        
-    const CONFIG_EXTENSION = 'php';
+abstract class Config {            
     
+	const extensions = ['php', 'yml'];
+	
+	/** 
+	 * Включать ли кеш конфига, для PHP расширения конфига всегда без кеша 
+	 * Для DEV всегда без кеша
+	 * @var string 
+	 */	
+	
     /** @var array*/
-    private $config;                
+    protected $config;                
     
     /** @var array */
-    private $tags;    	
+    protected $tags;    	
 
     /** @var string */
-    private $enviroment;            
+    protected $enviroment;          
 
     /**
      * 
@@ -61,7 +67,9 @@ class Config {
 			$value = is_array($this->config[$conf]) ? $this->config[$conf] : [$this->config[$conf]];
 		}
 		
-		return new Config($value);
+		$class = get_class($this);
+		
+		return new $class($value);
     }
     
     /**
@@ -105,47 +113,14 @@ class Config {
      * @throws \ConfigException
      * @return \Services\Config
      */		
-    public function addFile($file, bool $required = true, string $key = ''): self
-    {	
-        
-        $fileExist = file_exists($file);                  
-
-        if(!$fileExist && $required){
-            throw new \ConfigException('Не найден файл конфига '.$fileName, $file);
-        }                
-        		
-        if($key && !isset($this->config[$key])){
-            $this->config[$key] = [];
-        }                        
-        
-        if(!$fileExist){
-			return $this;
-		}
-				
-		try {
-			$content = file_get_contents($file);
-			$config = Yaml::parse($this->replaceTags($content));
-		} catch (\Exception $ex) {
-			throw new \ConfigException( $ex->getMessage() );
-		}
-		
-		if($key){
-			$exConfig = &$this->config[$key];
-		}else{
-			$exConfig = &$this->config;
-		}                                    
-
-		$exConfig = array_replace_recursive($exConfig, $config);
-        
-        return $this;        
-    }	
+    abstract public function addFile(string $file, bool $required, string $key): ConfigInterface;
 	
 	/**
 	 * Производит замену тегов и возвращает отформатированный текст
 	 * @param string $content
 	 * @return string 
 	 */
-	private function replaceTags(string &$content): string
+	protected function replaceTags(string &$content): string
 	{		
 		
 		if(!sizeof($this->tags)){
@@ -157,7 +132,7 @@ class Config {
 		return $content = str_replace($keys, $values, $content);
 	}
 	
-	private function replaceTagsInArray(&$item, $key)
+	protected function replaceTagsInArray(&$item, $key)
 	{
 		if(empty($this->tags)){
 			return;
@@ -168,4 +143,43 @@ class Config {
 		$item = str_replace($keys, $values, $item);
 	}
 	
+	
+	static function makeConfigFromArray(array $confArr, string $extension, string $enviroment, $tags): ConfigInterface
+	{		
+		$class = self::getClassNameByExtension($extension);
+		return new $class($confArr, $enviroment, $tags);
+		
+	}
+	
+	static function makeConfigFromDir(string $extension, string $enviroment, $configDirPath, array $tags=[]): ConfigInterface
+	{
+		$extension = strtolower($extension);		
+		$class = self::getClassNameByExtension($extension);
+		
+		$config = new $class([], $enviroment, $tags);		
+		$config->addFile($configDirPath.'/config.'.$extension, true);
+		if($enviroment){
+			$config->addFile($configDirPath."/config_{$enviroment}.".$extension, false);
+		}
+		$config->addFile($configDirPath.'/firewall.'.$extension, true, 'firewall');			
+		return $config;
+	}
+	
+	private static function getClassNameByExtension($extension)
+	{
+		$extension = strtolower($extension);
+		$namespace = '\\Kernel\\Services\\Config\\';
+		switch($extension){
+			
+			case 'php':
+				return $namespace.'PHPConfig';
+				
+			case 'yml':				
+				return $namespace.'YMLConfig';				
+			
+			default:
+				throw new \ConfigException('Неверное расширение файлов конфига - "'. htmlspecialchars($extension).
+						'". Возможные: '. implode(', ', self::extensions));
+		}
+	}
 }

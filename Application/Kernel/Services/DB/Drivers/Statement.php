@@ -6,7 +6,7 @@
  * and open the template in the editor.
  */
 
-namespace Kernel\Services\DB;
+namespace Kernel\Services\DB\Drivers;
 
 use Kernel\Services\Logger as Logger;
 /**

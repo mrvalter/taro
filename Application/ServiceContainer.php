@@ -1,12 +1,30 @@
 <?php
 
-use Kernel\Services\Config;
+use Kernel\Interfaces\ConfigInterface;
 use Kernel\Interfaces\ServiceContainerInterface;
 
-class ServiceContainer implements ServiceContainerInterface{
+/* Сервисы */
+use Kernel\Services\Security\SessionStorage\NativeSessionStorage;
+use Classes\UserRepository;
+use Kernel\Services\Security\Authentication\DbAuthenticator;
+use Kernel\Services\Security\Authentication\LdapAuthenticator;
+use Kernel\Services\MenuBuilder_MM\MenuBuilder;
+use Kernel\Services\Security\Security;
+use Kernel\Services\Viewer\Vi;
+use Kernel\Services\DB;
+
+
+
+/**
+ * @property-read  MenuBuilder $menu_builder Постройщик меню
+ * @property-read NativeSessionStorage $session_storage Сессия
+ */
+abstract class ServiceContainer implements ServiceContainerInterface{
     
 	/** @var array */
     private $services;
+	
+	private $staticServices = [];
 	
 	/** @var Config */
     private $config;  
@@ -14,28 +32,37 @@ class ServiceContainer implements ServiceContainerInterface{
     /**
      * @param Config $config 
      */
-    public function __construct(Config $config = null)
+    public function __construct(ConfigInterface $config)
     {
-        $this->config = $config ?? new Config();
+		
+        $this->config = $config;
     }
     
-    final public function addService(string $name, $object): self
+    final public function addService(string $name, $object, bool $static = false): self
     {     
 				
         if(!is_object($object)){
             throw new ServiceException(' Сервис "'.$name.'" должен быть объектом ');
         }
+		if(isset($this->services[$name]) && isset($this->staticServices[$name])) {
+			throw new ServiceException(' Сервис "'.$name.'" уже инициализирован ');
+		}
+		
         $this->services[$name] = $object;
+		
+		if($static){
+			$this->staticServices[$name] = 1;
+		}
 		return $this;
-    }
-    
+    }    	
+	
     /**
      * Загружает и возвращает объект сервиса
      * @throws ServiceException
      * @param type $name Имя сервиса
      * @return object  Возвращает объект сервиса
      */
-    final public function get(string $name)
+    final protected function get(string $name)
     {			
 		return $this->services[$name] ?? $this->initService($name);
     }	
@@ -50,7 +77,7 @@ class ServiceContainer implements ServiceContainerInterface{
      */
     private function initService(string $serviceName, array $usedNames=[])
     {		                       						
-       
+       var_dump($serviceName);
 		if(in_array($serviceName, $usedNames)){
 			throw new \ServiceCycleException('Обнаружена цикличность сервисов '.implode('=>',$usedNames)."=>$serviceName");
 		}        		

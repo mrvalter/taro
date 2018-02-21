@@ -105,7 +105,7 @@ class TwigViewer implements ViewInterface {
 		$this->twig->getLoader()->addPath($path, $namespace);
 	}
 	
-	public function render(string $template, array $params = [], string $namespace=''): string
+	public function render(string $template, array &$params = [], string $namespace=''): string
 	{				
 		$template .= self::templateExtension;
 		if($namespace){

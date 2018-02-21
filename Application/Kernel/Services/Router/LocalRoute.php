@@ -2,7 +2,7 @@
 namespace Kernel\Services\Router;
 
 use Kernel\Classes\Controller;
-use Kernel\Services\Firewall;
+use Kernel\Services\Firewall\Firewall;
 use Kernel\Services\HttpFound\{Response, Uri, Request};
 //use Psr\Http\Message\RequestInterface;
 /**
@@ -180,7 +180,7 @@ class LocalRoute extends Route{
 	
 	private function getFirewall(): Firewall
 	{
-		return $this->serviceContainer->get('firewall');
+		return $this->serviceContainer->firewall;
 	}
 	
 	private function findController(Uri $uri, $throwException = false): string

@@ -4,7 +4,7 @@
  * @autor Fedyakin Alexander
  * @copyright (c) 2015, Materia Medica Group
  */
-namespace Kernel\Services\DB;
+namespace Kernel\Services\DB\Drivers;
 /**
  * @category MED CRM
  */

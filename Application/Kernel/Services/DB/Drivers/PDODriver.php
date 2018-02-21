@@ -4,7 +4,7 @@
  * @copyright (c) 2015, Materia Medica Group
  * @package Services\DB
  */
-namespace Kernel\Services\DB;
+namespace Kernel\Services\DB\Drivers;
 use Kernel\Services\Logger as Logger;
 
 /**

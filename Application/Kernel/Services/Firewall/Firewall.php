@@ -1,13 +1,13 @@
 <?php
-namespace Kernel\Services;
+namespace Kernel\Services\Firewall;
 
 use Kernel\Interfaces\FirewallInterface;
 use Kernel\Services\Security\Security;
 use Kernel\Services\HttpFound\{Uri, Response};
-use Kernel\Services\Config;
 use Composer\Autoload\ClassLoader;
 
 use Psr\Http\Message\RequestInterface;
+use Kernel\Interfaces\ConfigInterface;
 
 
 /**
@@ -57,7 +57,7 @@ class Firewall implements FirewallInterface{
      * @param Security $security
      * @param array $config
      */
-    public function __construct(Security $security, Config $config, $classLoader, $bundlesPath)
+    public function __construct(Security $security, ConfigInterface $config, $classLoader, $bundlesPath)
     {
         if(!file_exists($bundlesPath)){
             throw new \SystemErrorException('Path to Bundle\'s dir not found', 'bundlesPath: '.$bundlesPath);
@@ -245,7 +245,7 @@ class Firewall implements FirewallInterface{
 	 * @return array
 	 * @throws \FirewallException
 	 */
-	private function getRequireBundlesFromConfig(Config $config, $classLoader, $bundlesPath)
+	private function getRequireBundlesFromConfig(ConfigInterface $config, $classLoader, $bundlesPath)
 	{		
 		$returnRequireBundles = [];		
 		$requiredbundles = $config->getValue('required_bundles');
@@ -269,7 +269,7 @@ class Firewall implements FirewallInterface{
 	 * @param Config $config
 	 * @return array
 	 */
-	private function getPublicUrlsFromConfig(Config $config)
+	private function getPublicUrlsFromConfig(ConfigInterface $config)
 	{
 		$returnPublicUrls = [];
 		$publicUrls = $config->getValue('public_urls');

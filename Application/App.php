@@ -275,7 +275,7 @@ class App {
 			$config = $this->config;
 			
             /* Подгружаем сервисы */
-            $this->ServiceContainer = new ServiceContainerD($config->get('services'));
+            $this->ServiceContainer = new ServiceContainer($config->get('services'));
 			$this->ServiceContainer->addService('config', $config, true);
 			
             Repository::setServiceContainer($this->ServiceContainer);

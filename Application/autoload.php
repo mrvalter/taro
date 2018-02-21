@@ -11,8 +11,5 @@ $loader->add('', __DIR__.'/Exceptions');
 if(file_exists(__DIR__.'/ServiceContainer.php')){
 	require_once __DIR__.'/ServiceContainer.php';
 }
-if(file_exists(__DIR__.'/ServiceContainerD.php')){
-	require_once __DIR__.'/ServiceContainerD.php';
-}
 
 return $loader;
